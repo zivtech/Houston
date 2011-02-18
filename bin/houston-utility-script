@@ -1,0 +1,48 @@
+<?php
+
+// TODO: Houston is platform agnostic but this one script isn't.  This shouldn't be based on drupal.
+
+// TODO: A lot of this needs to be configurable.
+// Specify important locations (the most likely elements to be updated)
+define('HOUSTON_APPLICATION_BASE_DIR', '/var/www/site');
+define('DRUPAL_SETTINGS_PHP', HOUSTON_APPLICATION_BASE_DIR . '/webroot/sites/default/settings.php');
+
+require_once DRUPAL_SETTINGS_PHP;
+require_once 'Zend/Db.php';
+require_once 'Zend/Registry.php';
+require_once 'Houston/Application.php';
+
+// Get a db object based on the Drupal site credentials chosen above
+$db = Zend_db::factory('Mysqli', parse_drupal_db_dsn($db_url));
+$db->setFetchMode(Zend_Db::FETCH_OBJ);
+// Even though we don't use it here, other objects use the registry to retrieve their dbs
+Zend_Registry::set('drupal_db', $db);
+
+$config = array(
+  'db' => Zend_Registry::get('drupal_db'),
+);
+
+// Put a copy of the application in the registry because some objects require it.
+Zend_Registry::set('Houston_Application', Houston_DataObject::factory('Houston_Application', $config));
+
+/**
+ * Parse the Drupal $db_url into an array and return it.
+ * This function was lifted from the zivtech module.
+ */
+function parse_drupal_db_dsn($db_url) {
+
+  $url = array();
+  if (empty($url)) {
+    $url = parse_url($db_url);
+    $url['username'] = urldecode($url['user']);
+    $url['password'] = isset($url['pass']) ? urldecode($url['pass']) : '';
+    $url['host'] = urldecode($url['host']);
+    $url['dbname'] = urldecode(substr($url['path'], 1));
+    if (isset($url['port'])) {
+      $url['host'] = $url['host'] .':'. $url['port'];
+    }
+  }
+  return $url;
+}
+
+?>

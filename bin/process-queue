@@ -1,0 +1,15 @@
+#!/usr/bin/env php
+<?php
+
+// Setup everything we need to setup to perform application operations.
+require_once 'houston-utility-script';
+require_once 'Houston/Queue.php';
+
+echo "\n\n Processing Queue: ".date(DATE_RFC822)." \n";
+
+// Process the queue.
+$queue = Houston_DataObject::factory('Houston_Queue', $config);
+$queue->cronProcessQueue();
+
+echo "\n\n Finished Processing Queue: ".date(DATE_RFC822)." \n";
+?>
