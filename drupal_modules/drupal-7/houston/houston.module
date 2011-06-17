@@ -1,0 +1,264 @@
+<?php
+/**
+ * Zend library includes.
+ */
+require_once 'Zend/Db.php';
+require_once 'Zend/Log.php';
+require_once 'Zend/Log/Writer/Stream.php';
+require_once 'Zend/Registry.php';
+
+/**
+ * Houston library includes.
+ */
+require_once 'Houston/DataObject.php';
+
+// Load the application object into the Zend Registry.
+// This must run before the menu system loads and hook_init.
+Zend_Registry::set('Houston_Application', houston_get_data_object('Houston_Application'));
+
+/**
+ * Parse the Drupal $db_url into an array and return it.
+ *
+ * @return
+ *   An array of database connection options compaible with 
+ */
+function houston_parse_drupal_db_dsn() {
+
+  global $databases;
+  static $url = array();
+
+  if (empty($url)) {
+    $database = $databases['default']['default'];
+    $url['username'] = $database['username'];
+    $url['password'] = $database['password'];
+    $url['dbname'] = $database['database'];
+    $url['host'] = $database['host'];
+    if (!empty($database['port'])) {
+      $url['host'] = $database['host'] .':'. $database['port'];
+    }
+    $url['charset'] = 'utf8';
+  }
+  return $url;
+}
+
+/**
+ * Return an object of type $class_name.
+ * 
+ * @param mixed $class_name 
+ */
+function houston_get_data_object($class_name) {
+
+  static $db, $config;
+
+  if ($db === NULL) {
+    $db = Zend_db::factory('Mysqli', houston_parse_drupal_db_dsn());
+    $db->setFetchMode(Zend_Db::FETCH_OBJ);
+    Zend_Registry::set(variable_get('db_registry_key', 'drupal_db'), $db);
+    $config = array(
+      'db_registry_key' => variable_get('db_registry_key', 'drupal_db'),
+    );
+    /*
+    // TODO: Decide whether to keep the log file around...
+    if ($debug_log_file = variable_get('debug_log_file', '')) {
+      $log = new Zend_Log();
+      $log->addWriter(new Zend_Log_Writer_Stream($debug_log_file));
+      Zend_Registry::set('debug_log', $log);
+      $config['log_registry_key'] = 'debug_log';
+    }
+    */
+  }
+  return Houston_DataObject::factory($class_name, $config);
+}
+
+/**
+ * Implements hook_menu().
+ */
+function houston_menu() {
+  $items = array();
+  $items['houston/service/salesforce'] = array(
+    'title' => 'Salesforce Service',
+    'page callback' => 'houston_service_url',
+    'page arguments' => array(2),
+    // TODO: Implement ip checking?
+    'access callback' => TRUE,//'houston_allowed_ips',
+    'menu_name' => 'houston',
+    'type' => MENU_CALLBACK,
+  );
+  return $items;
+}
+
+/**
+ *  Page callback for houston services.
+ *   Map to proper service handling based on
+ *   controller type.
+ */
+function houston_service_url($controller) {
+  $app = Zend_Registry::get('Houston_Application'); 
+  if ($type = $app->getControllerType($controller)) {
+    switch ($type) {
+      case 'Houston_Controllers_Salesforce_SalesForceClient':
+        houston_salesforce_service_url($controller);
+        break;
+    }
+  }
+  exit;
+}
+
+/**
+ * Access callback for allwed salesfoce ips.
+ */
+function houston_allowed_ips() {
+  require_once(SALESFORCE_DIR .'/salesforce.class.inc');
+  $ip = $_SERVER['REMOTE_ADDR'];
+  $ips = variable_get('houston_allowed_ips', FALSE);
+  $allowed_ips = ($ips === FALSE) ? houston_default_allowed_ips() : explode("\n", $ips);
+  $access = FALSE;
+  if (in_array($ip, $allowed_ips, TRUE)) {
+    $access = TRUE;
+  } 
+  else {
+    foreach ($allowed_ips as $range) {
+      if (_houston_cidr_match($ip, $range)) {
+        $access = TRUE;
+      }
+    }
+  }
+  return $access;
+}
+
+/**
+ * Given a CIDR mask and an IP address, return TRUE or FALSE if the IP address
+ * matches or doesn't match the CIDR mask.
+ * Adapted from http://stackoverflow.com/questions/594112
+ */
+function _houston_cidr_match($ip, $range) {
+  list ($subnet, $bits) = split('/', $range);
+  $ip = ip2long($ip);
+  $subnet = ip2long($subnet);
+  // Sanity check: ip2long() returns FALSE for an invalid IP address.
+  if (empty($subnet) || empty($bits) || empty($ip)) {
+    return FALSE;
+  }
+  $mask = -1 << (32 - $bits);
+  $subnet &= $mask; # nb: in case the supplied subnet wasn't correctly aligned
+  return ($ip & $mask) == $subnet;
+}
+
+/**
+ * Return an array of CIDR notation masks for allowed Salesforce IPs.
+ * These are taken from Knowledge Article #102757.
+ * https://help.salesforce.com/apex/HTViewSolution?id=102757&language=en
+ */
+function houston_default_allowed_ips() {
+  return array('204.14.232.0/23', '204.14.237.0/24', '96.43.144.0/22', '96.43.148.0/22', '204.14.234.0/23', '204.14.238.0/23', '202.129.242.0/25');
+}
+
+function houston_fieldmap_settings_access($fieldmap_id, $perm) {
+  $active = variable_get('houston_active_maps', array());
+  if (!empty($active[$fieldmap_id])) {
+    return user_access($perm);
+  }
+  return FALSE;
+}
+
+/**
+ * Menu callback for service
+ * TODO: authentication
+ */
+function houston_salesforce_service_url($controller) {
+  // Needed for the reference to SObject in parse_message, otherwise it just seems to die
+  // when it tries to call new SObject()
+  require_once 'Houston/Controllers/Salesforce/phptoolkit/soapclient/SforcePartnerClient.php';
+
+  $content = file_get_contents('php://input');
+  if (empty($content)) {
+    // TODO: empty request.
+    return;
+  }
+  $dom = new DOMDocument();
+  $dom->loadXML($content);
+  if (empty($dom) || !$dom->hasChildNodes()) {
+    // TODO: Failed to parse message.
+    _houston_soap_respond('false');
+    return;
+  }
+  $resultArray = _houston_parse_salesforce_message($dom);
+  $ret = _houston_handle_message($resultArray, $controller);
+
+  // Sends SOAP response to SFDC
+  $respond = $ret ? 'true' : 'false';
+  _houston_soap_respond($respond);
+  return;
+}
+
+/**
+ * Loop through an array of SObjects from SalesForce and save them according to
+ * any existing sf fieldmaps, notification settings, and data.
+ *
+ * @param array $objects
+ *  A numerically indexed array of SObjects (as returned by
+ *  _houston_parse_salesforce_message())
+ * @return (boolean) FALSE if there were errors. TRUE otherwise.
+ */
+function _houston_handle_message($objects, $controller) {
+  $app = Zend_Registry::get('Houston_Application'); 
+  return $app->updateLocalObjects($objects, $controller);
+}
+
+/**
+ * Parse SOAP message into its component args.
+ *
+ * @param (object) $domDoc
+ *  A DOMDocument representation of the outbound SOAP message from SalesForce.
+ * @return (array) $result
+ *   An indexed array mapping sfids to SObject records from SalesForce.
+ */
+function _houston_parse_salesforce_message($domDoc) {
+  $result = array();
+  $sfids = array();
+  // Create sObject array and fill fields provided in notification
+  $objects = $domDoc->getElementsByTagName('sObject');
+  foreach ($objects as $sObjectNode) {
+    $sObjType = $sObjectNode->getAttribute('xsi:type');
+    if (substr_count($sObjType, 'sf:')) {
+      $sObjType = substr($sObjType, 3);
+    }
+    $obj = new SObject();
+    $obj->type = $sObjType;
+    $elements = $sObjectNode->getElementsByTagNameNS('urn:sobject.enterprise.soap.sforce.com','*');
+    $obj->fieldnames = array();
+    foreach ($elements as $node) {
+      if ($node->localName == 'Id') {
+        // "Id" is a property of the SObject as well as SObject->fields
+        $sfids[] = $obj->Id = $node->textContent;
+      }
+      $fieldname = $node->localName;
+      $obj->fields->$fieldname = $node->nodeValue;
+      array_push($obj->fieldnames, $fieldname);
+    }
+    $result[$obj->Id] = $obj;
+  }
+
+  return $result;
+}
+
+/**
+ * Format and send a SOAP response message.
+ *
+ * @param boolean $tf
+ * @return void
+**/
+function _houston_soap_respond($response = 'true') {
+  print '<?xml version = "1.0" encoding = "utf-8"?>
+  <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+      <soapenv:Body>
+        <notifications xmlns="http://soap.sforce.com/2005/09/outbound">
+          <Ack>' . $response . '</Ack>
+        </notifications>
+      </soapenv:Body>
+  </soapenv:Envelope>
+  ';
+}
+
