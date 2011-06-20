@@ -1,0 +1,5 @@
+; $Id$
+name = Houston Utility
+description = A utility module that aids in integration with Houston
+package = Houston
+core = 7.x
