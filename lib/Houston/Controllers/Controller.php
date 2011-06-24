@@ -41,6 +41,11 @@ interface Houston_Controllers_Controller_Interface {
 
   // TODO: Map data should be in interface
 
+  /**
+   * Get the external object type for this particular connection.
+   */
+  public function getObjectType();
+
 }
 
 /**
@@ -115,6 +120,13 @@ abstract class Houston_Controllers_Controller implements Houston_Controllers_Con
   }
 
   public function delete(stdClass $data) {
+  }
+
+  /**
+   * Get the external object type for this particular connection.
+   */
+  public function getObjectType() {
+    return NULL;
   }
 
 }

@@ -63,6 +63,12 @@ abstract class Houston_DataObject {
   protected $files = array();
 
   /**
+   * Whether or not this object has just been inserted int the db.
+   *  TODO: Think this through
+   */
+  protected $new = FALSE;
+
+  /**
    * fieldMap
    *
    * An associative array of the fields of this object
@@ -442,16 +448,18 @@ abstract class Houston_DataObject {
    *  (array) Data result of the operation.
    */
   public function callController($operation, $controller, $queue = TRUE) {
+    $result = array();
     $data = $this->translateData('local', $controller, $this);
     if (isset($this->controllers[$controller])) {
       // If we are locked from this operation, don't do it.
       // TODO: The whole status thing may be overkill - we may just want to lock loading.
       if ($this->getDataStatus($operation, $controller)) {
-        return;
+        return $result;
       }
       $result = $this->controllers[$controller]->$operation($data, $this->getFieldmap());
       if ($result['status']) {
-        $data = $this->translateData($controller, 'local', $result['data']);
+        $result_data = isset($result['data']) ? $result['data'] : NULL;
+        $data = $this->translateData($controller, 'local', $result_data);
         $this->setData($data);
       }
       else {
@@ -538,6 +546,7 @@ abstract class Houston_DataObject {
     else {
       $result = $this->db->insert($table, $data);
       $this->id = $this->db->lastInsertId();
+      $this->new = TRUE;
     }
     if ($this->saveChildren) {
       $this->saveChildren($callerController);
@@ -594,12 +603,21 @@ abstract class Houston_DataObject {
    *   (string) The controller from which to load.
    * @return mixed
    */
-  public function loadWithExternalId($externalId, $controller, $loadingController = NULL) {
+  public function loadWithExternalId($externalId, $controller, $loadingController = NULL, $saveNew = FALSE) {
     if ($field = $this->getControllerIdField($controller)) {
       $fieldMap = $this->getFieldMap();
       if (isset($fieldMap[$field]['db']['field'])) {
+        $this->$field = $externalId;
         if ($id = $this->getHoustonIdFromExternalId($externalId, $fieldMap[$field]['db']['field'])) {
           return $this->load($id, $loadingController);
+        }
+        else if ($saveNew) {
+          // If we don't have this locally, then this will try to to grab it from the designated controller
+          //  and add the data to houston.
+          $result = $this->callController('load', $controller);
+          if ($result['status']) {
+            $this->save($controller);
+          }
         }
       }
     }
@@ -785,7 +803,7 @@ abstract class Houston_DataObject {
             FROM $table
             WHERE id = ?";
     $arguments = array($id);
-    if ($this->mode) {
+    if (isset($this->mode) && $this->mode) {
       $sql .= " AND mode = ?";
       $arguments[] = $mode;
     }
@@ -1196,6 +1214,13 @@ abstract class Houston_DataObject {
    */
   public function isDeleted() {
     return $this->deleted ? TRUE : FALSE;
+  }
+
+  /**
+   * Check to see if this User has been deleted.
+   */
+  public function isNew() {
+    return $this->new ? TRUE : FALSE;
   }
 
   /**

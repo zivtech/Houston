@@ -87,6 +87,13 @@ class Houston_Controllers_Salesforce_SalesForceClient extends SforceEnterpriseCl
   }
 
   /**
+   * Get the external object type for this particular connection.
+   */
+  public function getObjectType() {
+    return $this->type;
+  }
+
+  /**
    * Save 
    */
   public function save(stdClass $data) {
@@ -101,7 +108,7 @@ class Houston_Controllers_Salesforce_SalesForceClient extends SforceEnterpriseCl
     }
 
     // Determine data to return.
-    if (is_object($response) && $response->success) {
+    if (is_object($response) && isset($response->success) && $response->success) {
       $result['data'] = array('Id' => $response->id);
       $result['status'] = TRUE;
     }

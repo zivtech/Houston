@@ -2,14 +2,13 @@
 
 /**
  * Works with a local instance of Drupal.
- *
- * The assumption is that it is already bootstrapped, so we can access any 
- * drupal functions we'd like.
+ * The assumption is that it is already bootstrapped,
+ * so we can access any drupal functions we'd like.
  */
 
 require_once 'Houston/Controllers/Controller.php';
 
-class Houston_Controllers_Drupal_DrupalLocal implements Houston_Controllers_Controller_Interface {
+class Houston_Controllers_Drupal_Drupal7Local implements Houston_Controllers_Controller_Interface {
 
   /**
    * The drupal object type.
@@ -20,11 +19,6 @@ class Houston_Controllers_Drupal_DrupalLocal implements Houston_Controllers_Cont
    * The type of node (if type is node).
    */
   private $nodeType = '';
-
-  /**
-   * The node type of the content profile
-   */
-  private $contentProfile = NULL;
 
   /**
    * The fieldmap for this particular controller.
@@ -61,11 +55,6 @@ class Houston_Controllers_Drupal_DrupalLocal implements Houston_Controllers_Cont
   public function processConfig(array $config) {
     if (isset($config['type'])) {
       $this->type = $config['type'];
-      if ($this->type == 'user') {
-        if (isset($config['content-profile'])) {
-          $this->contentProfile = $config['content-profile'];
-        }
-      }
     }
     if (isset($config['node-type'])) {
       $this->nodeType = $config['node-type'];
@@ -82,6 +71,14 @@ class Houston_Controllers_Drupal_DrupalLocal implements Houston_Controllers_Cont
   }
 
   /**
+   * Get the external object type for this particular connection.
+   */
+  public function getObjectType() {
+    // TODO: There's more logic to determining the type.
+    return $this->type;
+  }
+
+  /**
    * Save (create or update) an item in the remote system.
    *
    * Essentially performs an 'upsert' operation.
@@ -89,7 +86,13 @@ class Houston_Controllers_Drupal_DrupalLocal implements Houston_Controllers_Cont
   public function save(stdClass $data) {
     switch ($this->type) {
       case 'node':
-        $result = array('status' => FALSE, 'type' => 'node');
+        if (isset($data->nid) && is_int($data->nid)) {
+          $result = $this->updateDrupalNode($data);
+        }
+        else {
+          $result = $this->createDrupalNode($data);
+        }
+        //$result = array('status' => FALSE, 'type' => 'node');
         break;
       case 'user':
         if (isset($data->uid) && is_int($data->uid)) {
@@ -112,8 +115,9 @@ class Houston_Controllers_Drupal_DrupalLocal implements Houston_Controllers_Cont
   }
 
   /**
-   * Load an item from the remote system.
+   *
    */
+  // TODO: decide what this function definition should look like
   public function load(stdClass $data) {
     $result = array('status' => FALSE);
     // This does something
@@ -161,35 +165,31 @@ class Houston_Controllers_Drupal_DrupalLocal implements Houston_Controllers_Cont
   }
 
   /**
-   *
+   * Create a brand new user in Drupal.
    */
   public function createDrupalUser(&$data) {
     $result = array('status' => FALSE);
-    $values = $data->data;
-    $newUser = array('savingFromHouston' => TRUE);
+    $edit = new stdClass;
     
-    // TODO: incorporate profile module, or content profile module?
-    foreach ($values as $name => $value) {
-      $newUser[$name] = $value;
-    }
-    
-    if (!isset($newUser['mail']) || !isset($newUser['name'])) {
+    $this->mapDataToDrupalObject('user', $edit, $data);
+    $edit->savingFromHouston = TRUE;
+    if (!isset($edit->mail) || !isset($edit->name)) {
       return $result;
     }
 
-    if (!isset($newUser['init'])) {
-      $newUser['init'] = $values->mail;
+    if (!isset($edit->init)) {
+      $edit->init = $data->mail;
     }
 
-    if (!isset($newUser['pass'])) {
-      $newUser['pass'] = user_password(); 
+    if (!isset($edit->pass)) {
+      $edit->pass = user_password(); 
     }
 
-    if (!isset($newUser['status'])) {
-      $newUser['status'] = 1;
+    if (!isset($edit->status)) {
+      $edit->status = 1;
     }
 
-    $success = user_save(FALSE, $newUser);
+    $success = user_save(FALSE, (array) $edit);
  
     if ($success) {
       // If we're dealing with a drupal user, we must have a uid field.
@@ -204,24 +204,42 @@ class Houston_Controllers_Drupal_DrupalLocal implements Houston_Controllers_Cont
   }
 
   /**
-   * TODO: code docs.
+   *
+   */
+  public function createDrupalNode(&$data) {
+    $result = array('status' => FALSE);
+
+    $node = new StdClass;
+    $node->language = 'und';
+    $node->type =  $this->nodeType;
+    $node->savingFromHouston = TRUE;
+    $this->mapDataToDrupalObject('node', $node, $data);
+    node_save($node);
+ 
+    if ($node->nid) {
+      // If we're dealing with a drupal user, we must have a uid field.
+      // There can only be one uid, since this is a one-off Drupal connection.
+      $data = new stdClass;
+      $data->nid = $node->nid;
+      $result['status'] = TRUE;
+      $result['object'] = $node;
+      $result['data'] = $data;
+    }
+    return $result;
+  }
+
+  /**
+   *
    */
   public function updateDrupalUser(&$data) {
     $result = array('status' => FALSE);
-    $account = user_load($data->uid);
-    $account->savingFromHouston = TRUE;
-    $this->mapDataToDrupalObject('user', $account, $data);
+    $account = user_load($data->uid, $reset = TRUE);
+    $edit = new stdClass;
+    $this->mapDataToDrupalObject('user', $edit, $data);
+    $edit->savingFromHouston = TRUE;
  
-    $success = user_save($account, (array) $data);
+    $success = user_save($account, (array) $edit);
     if ($success) {
-      if (!is_null($this->contentProfile)) {
-        $profile = content_profile_load($this->contentProfile, $account->uid, $lang = '', $reset = TRUE);
-        $profile->savingFromHouston = TRUE;
-        // TODO: If there is no profile should we create one?
-        $this->mapDataToDrupalObject('node', $profile, $data);
-        // TODO: Success on node save too
-        node_save($profile);
-      }
       $data = new stdClass;
       $data->uid = $success->uid;
 
@@ -233,7 +251,28 @@ class Houston_Controllers_Drupal_DrupalLocal implements Houston_Controllers_Cont
   }
 
   /**
-   * TODO: code docs.
+   * Updates a node with houston data.
+   */
+  public function updateDrupalNode(&$data) {
+    $result = array('status' => FALSE);
+    $node = node_load($data->nid);
+    $node->savingFromHouston = TRUE;
+    $this->mapDataToDrupalObject('node', $node, $data);
+ 
+    node_save($node);
+    if ($node->nid) {
+      $data = new stdClass;
+      $data->nid = $node->nid;
+
+      $result['status'] = TRUE;
+      $result['object'] = $node;
+      $result['data'] = $data; 
+    }
+    return $result;
+  }
+
+  /**
+   *
    */
   public function saveDrupalWithCallback($data) {
     $result = array('status' => FALSE);
@@ -251,13 +290,14 @@ class Houston_Controllers_Drupal_DrupalLocal implements Houston_Controllers_Cont
    */
   function mapDataToDrupalObject($type, &$object, $data) {
     // TODO: Break out the types of objects into separate functions.
+    // TODO: This can be changed around to be more generic for drupal 7.
     $fieldMap = $this->fieldMap;
     foreach ($fieldMap as $localName => $fieldData) {
       if (!isset($data->{$fieldData['field']})) {
         continue;
       }
-      if ($type != 'node') {
-        // Deal with user roles.
+      if (!in_array($type, array('node', 'user'))) {
+        // TODO: Deal with user roles elswhere, because it is not run here anymore.
         if ($type == 'user' && isset($fieldData['role'])) {
           if ($data->{$fieldData['field']}) {
             $object['roles'][$fieldData['role']] == $fieldData['field'];
@@ -266,21 +306,24 @@ class Houston_Controllers_Drupal_DrupalLocal implements Houston_Controllers_Cont
             unset($object['roles'][$fieldData['role']]);
           }
         }
-        else if (!isset($fieldData['cckType'])) {
+        else if (!isset($fieldData['fieldType'])) {
           $object->{$fieldData['field']} = $data->{$fieldData['field']};
         }
       }
       // Ensure that the field is an array
-      else if (isset($fieldData['cckType']) && (!isset($object->{$fieldData['field']}) || is_array($object->{$fieldData['field']}))) {
-        switch ($fieldData['cckType']) {
+      else if (isset($fieldData['fieldType']) && (!isset($object->{$fieldData['field']}) || is_array($object->{$fieldData['field']}))) {
+        if (!isset($object->{$fieldData['field']})) {
+          $object->{$fieldData['field']} = array();
+        }
+        switch ($fieldData['fieldType']) {
           case 'node_reference':
-            $object->{$fieldData['field']}[0]['nid'] = $data->{$fieldData['field']};
+            $object->{$fieldData['field']}['und'][0]['nid'] = $data->{$fieldData['field']};
             break;
           case 'user_reference':
-            $object->{$fieldData['field']}[0]['uid'] = $data->{$fieldData['field']};
+            $object->{$fieldData['field']}['und'][0]['uid'] = $data->{$fieldData['field']};
             break;
           default:
-            $object->{$fieldData['field']}[0]['value'] = $data->{$fieldData['field']};
+            $object->{$fieldData['field']}['und'][0]['value'] = $data->{$fieldData['field']};
             break;
         }
       }
@@ -305,17 +348,17 @@ class Houston_Controllers_Drupal_DrupalLocal implements Houston_Controllers_Cont
 
       $controllerName = $fieldData['field'];
       if (isset($object->$controllerName)) {
-        if (isset($fieldData['cckType']) && is_array($object->$controllerName)) {
+        if (isset($fieldData['fieldType']) && is_array($object->$controllerName)) {
           // TODO: Multi-valued fields
-          switch ($fieldData['cckType']) {
+          switch ($fieldData['fieldType']) {
             case 'node_reference': 
-              $data->$field = $object->{$controllerName}[0]['nid'];
+              $data->$field = $object->{$controllerName}['und'][0]['nid'];
               break;
             case 'user_reference':
-              $data->$field = $object->{$controllerName}[0]['uid'];
+              $data->$field = $object->{$controllerName}['und'][0]['uid'];
               break;
             default:
-              $data->$field = $object->{$controllerName}[0]['value'];
+              $data->$field = $object->{$controllerName}['und'][0]['value'];
               break;
           }
         }

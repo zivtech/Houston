@@ -26,17 +26,16 @@ class Houston_Extensions_Widgetco_Example extends Houston_DataObject {
       'controller' => 'Houston_Controllers_Salesforce_SalesForceClient',
       'operations' => array(
         'save',
-        'insert',
+        'delete',
         'update',
-        'pull',
         'cron',
       ),
       // Controller specific
       'config' => array(
-        'username' => 'foo@example.com',
+        'username' => 'someone',
         'password' => 'somepass',
         'securityToken' => 'sometoken',
-        'wsdlFilename' => HOUSTON_GLOBAL_SALESFORCE_WSDL,
+        'wsdlFilename' => '/absolute-path',
         'type' => 'Contact',
       ),
       // 'Heavier' items will go later while
@@ -44,42 +43,86 @@ class Houston_Extensions_Widgetco_Example extends Houston_DataObject {
       // of the list.
       'weight' => 0,
     ),
+    'companySalesforce' => array(
+      'enabled' => TRUE,
+      'controller' => 'Houston_Controllers_Salesforce_SalesForceClient',
+      'operations' => array(
+      ),
+      'config' => array(
+        'username' => 'someotherperson',
+        'password' => 'someotherpass',
+        'securityToken' => 'someothertoken',
+        'wsdlFilename' => '/other/absolute-path',
+        'type' => 'Contact',
+      ),
+      'weight' => 1,
+    ),
   );
 
   protected $fieldMap = array(
     'id' => array(
-      'db' => 'id',
+      'db' => array(
+        'field' => 'id',
+      ),
       'unique' => TRUE,
-      'companySalesforce' => 'houston_id__c',
+      'companySalesforce' => array(
+        'field' => 'houston_id__c',
+      ),
     ),
     'intranetId' => array(
       'unique' => TRUE,
-      'companySalesforce' => 'cms_id__c',
+      'id' => 'intranet',
+      'companySalesforce' => array(
+        'field' => 'cms_id__c',
+      ),
     ),
     'companySalesforceId' => array(
       'db' => 'salesforce_id',
       'unique' => TRUE,
-      'companySalesforceId' => 'Id',
+      'id' => 'companySalesforce',
+      'companySalesforceId' => array(
+        'field' => 'Id',
+      ),
     ),
     'firstName' => array(
-      'db' => 'first_name',
-      'intranet' => 'first_name',
+      'db' => array(
+        'field' => 'first_name',
+      ),
+      'intranet' => array(
+        'field' => 'first_name',
+      ),
     ),
     'lastName' => array(
-      'db' => 'last_name',
-      'intranet' => 'last_name',
+      'db' => array(
+        'field' => 'last_name',
+      ),
+      'intranet' => array(
+        'field' => 'last_name',
+      ),
     ),
     'email' => array(
-      'db' => 'email',
-      'intranet' => 'email',
+      'db' => array(
+        'field' => 'email',
+      ),
+      'intranet' => array(
+        'field' => 'email',
+      ),
     ),
     'homePhone' => array(
-      'db' => 'phone',
-      'intranet' => 'phone',
+      'db' => array(
+        'field' => 'phone',
+      ),
+      'intranet' => array(
+        'field' => 'phone',
+      ),
     ),
     'organization' => array(
-      'db' => 'organization',
-      'intranet' => 'organization',
+      'db' => array(
+        'field' => 'organization',
+      ),
+      'intranet' => array(
+        'field' => 'organization',
+      ),
     ),
   );
 

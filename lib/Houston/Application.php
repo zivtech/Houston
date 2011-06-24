@@ -1,10 +1,11 @@
 <?php
 
 require_once 'Houston/DataObject.php';
+// Note: We need to tell houston where the configuration file lives before loading.
+require_once HOUSTON_CONFIG_FILE;
 
 /**
  * Ids for operation statuses.
- *
  * TODO: These should be defined in the application.
  */
 define('HOUSTON_STATUS_UNLOCKED', 0);
@@ -36,13 +37,20 @@ class Houston_Application extends Houston_DataObject {
    */
   protected $variables = array();
 
+  /** 
+   * Configuration settings for this houston instance.
+   */
+  protected $config = NULL;
+
   /**
    * This method is called by the Houston_DataObject constructor.
    *
    * @return void
    */
   public function init() {
-
+    // Houston_Config storing all configuration settings.
+    // TODO: Reconsider best way to do this! (Note: Drupal kills globals)
+    $this->config = new Houston_Config();
   }
 
   /**
@@ -66,9 +74,94 @@ class Houston_Application extends Houston_DataObject {
   }
 
   /**
-   * TODO: Implement this!
+   * Get a connection to the specified controller.  This relies upon a configuration class
+   *
+   * @param string $controllerName
+   * @return mixed
    */
   public function getController($controllerName) {
+    static $controllers = array();
+    if (!class_exists('Houston_Config')) {
+      return FALSE;
+    }
+
+    if (!isset($controllers[$controllerName])) {
+      // We want errors if the controller doesn't exist.
+      $controller = $this->config->config['controllers'][$controllerName];
+      $controllers[$controllerName] = Houston_DataObject::factory($controller['controller'], $controller['config']);
+    }
+    return $controllers[$controllerName];
+  }
+
+  /**
+   * Get the connector type for a given controller.
+   *
+   * @param string $controller
+   */
+  public function getControllerType($controllerName) {
+      // We want errors if the controller doesn't exist.
+    $controller = $this->config->config['controllers'][$controllerName];
+    return $controller['controller'];
+  }
+
+  /**
+   * Update houston data given a list of exteral objects.
+   *
+   * @param array $objects
+   * @param string $controller
+   * 2return boolean
+   */
+  public function updateLocalObjects($objects, $controllerName) {
+    $success = TRUE;
+    foreach ($objects as $externalId => $object) {
+      $localObjects = $this->findLocalObjects($controllerName, $externalId, $object->type);
+      if (count($localObjects)) {
+        foreach ($localObjects as $localObject) {
+          if ($localObject->isNew()) {
+            continue;
+          }
+          $result = $localObject->callController('load', $controllerName);
+          if ($result['status']) {
+            $localObject->save($controllerName);
+          }
+          else {
+            // If we can't successfully load from the controller, then fail.
+            $success = FALSE;
+          }
+        }
+      }
+      else {
+        // If we don't find or create any associations, then fail.
+        $success = FALSE;
+      }
+    }
+    return $success;
+  }
+
+  /**
+   * Get a houston objects given a controller and id.
+   *  The trick is that we don't know the local object type.
+   *
+   * @param string $controller
+   * @param mixed $externalId
+   * @param string $type
+   * @return array
+   */
+  public function findLocalObjects($controller, $externalId, $type) {
+    $objects = array();
+    foreach ($this->config->config['classes'] as $class) {
+      $object = Houston_DataObject::factory($class, array('db' => $this->db)); 
+      $controllers = $object->getControllers();
+      // TODO: Add in settings to allow/disallow service updates/
+      if (isset($controllers[$controller])) {
+        if ($controllers[$controller]->getObjectType() == $type) {
+          // We make sure to add a new entry if nothing is found.
+          $object->loadWithExternalId($externalId, $controller, NULL, $saveNew = TRUE);
+          $objects[$object->getId()] = $object;
+        }
+      }
+    }
+    return $objects;
   }
 
   /**
