@@ -441,6 +441,25 @@ class Houston_Controllers_Salesforce_SalesForceClient extends SforceEnterpriseCl
   }
 
   /**
+   * Build and run a basic soql query.
+   *
+   * @param $type
+   *  (string) type of Salesforce object.
+   * @param $fields
+   *  (array) keyed by salesforce fields and has values to search for.
+   */
+  function buildAndRunSoqlQuery($type, $fields) {
+    $where = array();
+    $soql = "SELECT Id, " . implode(array_keys($fields));
+    $soql .= " FROM $type WHERE ";
+    foreach ($fields as $field => $value) {
+      $where[] = "$field = '$value' ";
+    }
+    $soql .= implode(" AND ", $where);
+    return $this->runSoqlQuery($soql);
+  }
+
+  /**
    * Check if the maximum number of salesforce api hits has been reached
    *
    * @return boolean
