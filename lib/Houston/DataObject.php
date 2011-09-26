@@ -609,6 +609,7 @@ abstract class Houston_DataObject {
       if (isset($fieldMap[$field]['db']['field'])) {
         $this->$field = $externalId;
         if ($id = $this->getHoustonIdFromExternalId($externalId, $fieldMap[$field]['db']['field'])) {
+          // TODO: is there any reason not 'getLoadedObject' here?
           return $this->load($id, $loadingController);
         }
         else if ($saveNew) {

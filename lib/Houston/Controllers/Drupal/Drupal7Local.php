@@ -11,14 +11,26 @@ require_once 'Houston/Controllers/Controller.php';
 class Houston_Controllers_Drupal_Drupal7Local implements Houston_Controllers_Controller_Interface {
 
   /**
-   * The drupal object type.
+   * The drupal object type eg node, user, entity, other...
    */
   public $type = '';
 
   /**
-   * The type of node (if type is node).
+   * The type of node (if type of node).
    */
   private $nodeType = '';
+
+  /**
+   * IF this is an entity, then the type of entity.
+   *  Use the options array for special info per entity type.
+   */
+  private $entityType = '';
+
+  /**
+   * Special options for the object type.
+   */
+  private $options = array();
+
 
   /**
    * The fieldmap for this particular controller.
@@ -59,6 +71,13 @@ class Houston_Controllers_Drupal_Drupal7Local implements Houston_Controllers_Con
     if (isset($config['node-type'])) {
       $this->nodeType = $config['node-type'];
     }
+    if (in_array($this->type, array('node', 'user'))) {
+      $this->entityType = $this->type;
+    }
+    else if (isset($config['entity-type'])) {
+      // Note: This is required for most types.
+      $this->entityType = $config['entity-type'];
+    }
     if (isset($config['db'])) {
       $this->db = $config['db'];
     }
@@ -67,6 +86,9 @@ class Houston_Controllers_Drupal_Drupal7Local implements Houston_Controllers_Con
     }
     if (isset($config['dataCallback'])) {
       $this->dataCallback = $config['dataCallback'];
+    }
+    if (isset($config['options'])) {
+      $this->options = $config['options'];
     }
   }
 
@@ -85,6 +107,15 @@ class Houston_Controllers_Drupal_Drupal7Local implements Houston_Controllers_Con
    */
   public function save(stdClass $data) {
     switch ($this->type) {
+      case 'entity':
+        // Note: this depends on entity api module.
+        if (isset($data->entity_id) && is_int($data->entity_id)) {
+          $result = $this->updateDrupalEntity($data);
+        }
+        else {
+          $result = $this->createDrupalEntity($data);
+        }
+        break;
       case 'node':
         if (isset($data->nid) && is_int($data->nid)) {
           $result = $this->updateDrupalNode($data);
@@ -109,7 +140,8 @@ class Houston_Controllers_Drupal_Drupal7Local implements Houston_Controllers_Con
         // TODO: Each product within an order can be synced.
         break;
       case 'other':
-      $result = $this->saveDrupalWithCallback($data);
+        $result = $this->saveDrupalWithCallback($data);
+        break;
     }
     return $result;
   }
@@ -210,8 +242,9 @@ class Houston_Controllers_Drupal_Drupal7Local implements Houston_Controllers_Con
     $result = array('status' => FALSE);
 
     $node = new StdClass;
+    // TODO: Default language?
     $node->language = 'und';
-    $node->type =  $this->nodeType;
+    $node->type = $this->nodeType;
     $node->savingFromHouston = TRUE;
     $this->mapDataToDrupalObject('node', $node, $data);
     node_save($node);
@@ -224,6 +257,49 @@ class Houston_Controllers_Drupal_Drupal7Local implements Houston_Controllers_Con
       $result['status'] = TRUE;
       $result['object'] = $node;
       $result['data'] = $data;
+    }
+    return $result;
+  }
+
+  /**
+   *
+   */
+  public function createDrupalEntity(&$data) {
+    $result = array('status' => FALSE);
+
+    // Note: This depends upon entity api module.
+    $entity = entity_create($this->entityType, array());
+    $entity->savingFromHouston = TRUE;
+    $this->mapDataToDrupalObject('entity', $entity, $data);
+    $status = entity_save($entity);
+ 
+    if ($id = entity_id($this->entityType, $entity)) {
+      $data = new stdClass;
+      $data->entity_id = $id;
+      $result['status'] = TRUE;
+      $result['object'] = $entity;
+      $result['data'] = $data;
+    }
+    return $result;
+  }
+
+  /**
+   * updates an entity with houston data.
+   */
+  public function updateDrupalEntity(&$data) {
+    $result = array('status' => false);
+    $entity = entity_load_single($data->entity_id);
+    $entity->savingfromhouston = true;
+    $this->mapDataToDrupaOobject('entity', $entity, $data);
+ 
+    $status = entity_save($entity);
+    if ($id = entity_id($this->entityType, $entity)) {
+      $data = new stdclass;
+      $data->entity_id = $id;
+
+      $result['status'] = $status;
+      $result['object'] = $entity;
+      $result['data'] = $data; 
     }
     return $result;
   }
@@ -251,20 +327,20 @@ class Houston_Controllers_Drupal_Drupal7Local implements Houston_Controllers_Con
   }
 
   /**
-   * Updates a node with houston data.
+   * updates o node with houston data.
    */
   public function updateDrupalNode(&$data) {
-    $result = array('status' => FALSE);
+    $result = array('status' => false);
     $node = node_load($data->nid);
-    $node->savingFromHouston = TRUE;
-    $this->mapDataToDrupalObject('node', $node, $data);
+    $node->savingfromhouston = true;
+    $this->mapDataToDrupaOobject('node', $node, $data);
  
-    node_save($node);
+    $status = node_save($node);
     if ($node->nid) {
-      $data = new stdClass;
-      $data->nid = $node->nid;
+      $data = new stdclass;
+      $data->nid= $node->nid;
 
-      $result['status'] = TRUE;
+      $result['status'] = $status;
       $result['object'] = $node;
       $result['data'] = $data; 
     }
@@ -296,34 +372,26 @@ class Houston_Controllers_Drupal_Drupal7Local implements Houston_Controllers_Con
       if (!isset($data->{$fieldData['field']})) {
         continue;
       }
-      if (!in_array($type, array('node', 'user'))) {
-        // TODO: Deal with user roles elswhere, because it is not run here anymore.
-        if ($type == 'user' && isset($fieldData['role'])) {
-          if ($data->{$fieldData['field']}) {
-            $object['roles'][$fieldData['role']] == $fieldData['field'];
-          }
-          else {
-            unset($object['roles'][$fieldData['role']]);
-          }
-        }
-        else if (!isset($fieldData['fieldType'])) {
+      if (!in_array($type, array('node', 'user', 'entity'))) {
+        if (!isset($fieldData['fieldType'])) {
           $object->{$fieldData['field']} = $data->{$fieldData['field']};
         }
       }
       // Ensure that the field is an array
       else if (isset($fieldData['fieldType']) && (!isset($object->{$fieldData['field']}) || is_array($object->{$fieldData['field']}))) {
+        $language = isset($object->language) ? $object->language : 'und';
         if (!isset($object->{$fieldData['field']})) {
           $object->{$fieldData['field']} = array();
         }
         switch ($fieldData['fieldType']) {
           case 'node_reference':
-            $object->{$fieldData['field']}['und'][0]['nid'] = $data->{$fieldData['field']};
+            $object->{$fieldData['field']}[$language][0]['nid'] = $data->{$fieldData['field']};
             break;
           case 'user_reference':
-            $object->{$fieldData['field']}['und'][0]['uid'] = $data->{$fieldData['field']};
+            $object->{$fieldData['field']}[$language][0]['uid'] = $data->{$fieldData['field']};
             break;
           default:
-            $object->{$fieldData['field']}['und'][0]['value'] = $data->{$fieldData['field']};
+            $object->{$fieldData['field']}[$language][0]['value'] = $data->{$fieldData['field']};
             break;
         }
       }
@@ -350,15 +418,16 @@ class Houston_Controllers_Drupal_Drupal7Local implements Houston_Controllers_Con
       if (isset($object->$controllerName)) {
         if (isset($fieldData['fieldType']) && is_array($object->$controllerName)) {
           // TODO: Multi-valued fields
+          $values = field_get_items($this->entityType, $object, $controllerName);
           switch ($fieldData['fieldType']) {
-            case 'node_reference': 
-              $data->$field = $object->{$controllerName}['und'][0]['nid'];
+            case 'node_reference':
+              $data->$field = $values[0]['nid'];
               break;
             case 'user_reference':
-              $data->$field = $object->{$controllerName}['und'][0]['uid'];
+              $data->$field = $values[0]['uid'];
               break;
             default:
-              $data->$field = $object->{$controllerName}['und'][0]['value'];
+              $data->$field = $values[0]['value'];
               break;
           }
         }
