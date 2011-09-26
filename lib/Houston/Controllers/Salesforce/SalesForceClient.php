@@ -1,7 +1,7 @@
 <?php
 
 require_once 'Houston/Controllers/Controller.php';
-require_once 'Houston/Controllers/Salesforce/phptoolkit/soapclient/SforceEnterpriseClient.php';
+require_once 'phptoolkit/soapclient/SforceEnterpriseClient.php';
 require_once 'Houston/Application.php';
 
 class Houston_Controllers_Salesforce_SalesForceClient extends SforceEnterpriseClient implements Houston_Controllers_Controller_Interface {

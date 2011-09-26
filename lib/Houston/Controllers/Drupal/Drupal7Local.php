@@ -73,6 +73,9 @@ class Houston_Controllers_Drupal_Drupal7Local implements Houston_Controllers_Con
     }
     if (in_array($this->type, array('node', 'user'))) {
       $this->entityType = $this->type;
+      if ($this->type == 'user' && is_array($config['profile2'])) {
+        $this->profiles = $config['profile2'];
+      }
     }
     else if (isset($config['entity-type'])) {
       // Note: This is required for most types.
@@ -154,6 +157,12 @@ class Houston_Controllers_Drupal_Drupal7Local implements Houston_Controllers_Con
     $result = array('status' => FALSE);
     // This does something
     switch ($this->type) {
+      case 'entity':
+        if (isset($data->entity_id) && is_int($data->entity_id)) {
+          $entity = entity_load($data->entity_id, $this->entityType);
+          $mappedData = $this->mapDataFromDrupal($entity, TRUE);
+        }
+        break;
       case 'node':
         if (isset($data->nid) && is_int($data->nid)) {
           $node = node_load($data->nid);
@@ -164,10 +173,18 @@ class Houston_Controllers_Drupal_Drupal7Local implements Houston_Controllers_Con
         if (isset($data->uid) && is_int($data->uid)) {
           $account = user_load($data->uid);
           $mappedData = $this->mapDataFromDrupal($account, TRUE);
-          if (!is_null($this->contentProfile)) {
-            $profile = content_profile_load($this->contentProfile, $data->uid);
-            $mappedProfile = $this->mapDataFromDrupal($profile, TRUE);
-            $mappedData = (object) array_merge((array) $mappedProfile, (array) $mappedData);
+
+          // If we have profiles, then merge all of the data together.
+          // This does not support reusing fields on profile2 entities
+          // and users.
+          if (is_array($this->profiles)) {
+            $profiles = profile2_load_by_user($account);
+            foreach ($this->profiles as $profileType) {
+              if (isset($profiles[$profileType])) {
+                $mappedProfile = $this->mapDataFromDrupal($profiles[$profileType], TRUE);
+                $mappedData = (object) array_merge((array) $mappedProfile, (array) $mappedData);
+              }
+            }
           }
         }
         break;
@@ -222,6 +239,8 @@ class Houston_Controllers_Drupal_Drupal7Local implements Houston_Controllers_Con
     }
 
     $success = user_save(FALSE, (array) $edit);
+
+    // TODO: this does not take profile2 into account and it should.
  
     if ($success) {
       // If we're dealing with a drupal user, we must have a uid field.
@@ -305,7 +324,7 @@ class Houston_Controllers_Drupal_Drupal7Local implements Houston_Controllers_Con
   }
 
   /**
-   *
+   * Update an account object in Drupal.
    */
   public function updateDrupalUser(&$data) {
     $result = array('status' => FALSE);
@@ -315,6 +334,17 @@ class Houston_Controllers_Drupal_Drupal7Local implements Houston_Controllers_Con
     $edit->savingFromHouston = TRUE;
  
     $success = user_save($account, (array) $edit);
+
+    if (is_array($this->profiles)) {
+      $profiles = profile2_load_by_user($account);
+      foreach ($this->profiles as $profileType) {
+        $fieldMap = $this->getUserProfileFieldMap($profileType);
+        $this->mapDataToDrupalObject('profile2', $profiles[$profileType], $data, $fieldMap);
+        // TODO: Report success on profile save.
+        profile2_save($profiles[$profileType]);
+      }
+    }
+
     if ($success) {
       $data = new stdClass;
       $data->uid = $success->uid;
@@ -364,15 +394,17 @@ class Houston_Controllers_Drupal_Drupal7Local implements Houston_Controllers_Con
   /**
    * Map local data to drupal objects.
    */
-  function mapDataToDrupalObject($type, &$object, $data) {
+  function mapDataToDrupalObject($type, &$object, $data, $fieldMap = NULL) {
     // TODO: Break out the types of objects into separate functions.
     // TODO: This can be changed around to be more generic for drupal 7.
-    $fieldMap = $this->fieldMap;
+    if (is_null($fieldMap)) {
+      $fieldMap = $this->fieldMap;
+    }
     foreach ($fieldMap as $localName => $fieldData) {
       if (!isset($data->{$fieldData['field']})) {
         continue;
       }
-      if (!in_array($type, array('node', 'user', 'entity'))) {
+      if (!in_array($type, array('node', 'user', 'entity', 'profile2'))) {
         if (!isset($fieldData['fieldType'])) {
           $object->{$fieldData['field']} = $data->{$fieldData['field']};
         }
@@ -438,6 +470,20 @@ class Houston_Controllers_Drupal_Drupal7Local implements Houston_Controllers_Con
       }
     }
     return $data;
+  }
+
+  /**
+   * If this is a user mapping with profile2 profiles
+   *  then each profile will have different fields.
+   */
+  private function getUserProfileFieldMap($profileType) {
+    $fieldMap = array();
+    foreach ($this->fieldMap as $localName => $fieldData) {
+      if (isset($fieldData['profile2']) && $fieldData['profile2'] == $profileType) {
+        $fieldMap[$localName] = $fieldData;
+      }
+    }
+    return $fieldMap;
   }
 }
 
