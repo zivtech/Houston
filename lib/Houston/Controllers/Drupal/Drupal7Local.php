@@ -136,6 +136,9 @@ class Houston_Controllers_Drupal_Drupal7Local implements Houston_Controllers_Con
           $result = $this->createDrupalUser($data);
         }
         break;
+      case 'taxonomy-term':
+        $result = $this->saveTaxonomyTerm($data);
+        break;
       case 'order':
         $result = array('status' => TRUE, 'type' => 'order');
         break;
@@ -255,14 +258,14 @@ class Houston_Controllers_Drupal_Drupal7Local implements Houston_Controllers_Con
   }
 
   /**
-   *
+   * Create a node in Drupal.
    */
   public function createDrupalNode(&$data) {
     $result = array('status' => FALSE);
 
     $node = new StdClass;
     // TODO: Default language?
-    $node->language = 'und';
+    $node->language = LANGUAGE_NONE;
     $node->type = $this->nodeType;
     $node->savingFromHouston = TRUE;
     $this->mapDataToDrupalObject('node', $node, $data);
@@ -281,7 +284,7 @@ class Houston_Controllers_Drupal_Drupal7Local implements Houston_Controllers_Con
   }
 
   /**
-   *
+   * Create an entity in Drupal.
    */
   public function createDrupalEntity(&$data) {
     $result = array('status' => FALSE);
@@ -378,9 +381,34 @@ class Houston_Controllers_Drupal_Drupal7Local implements Houston_Controllers_Con
   }
 
   /**
-   *
+   * Save a taxonomy term.
    */
-  public function saveDrupalWithCallback($data) {
+  public function saveTaxonomyTerm(&$data) {
+    $result = array('status' => FALSE);
+    if (isset($data->tid) && $data->tid) {
+      $term = taxonomy_term_load($data->tid);
+    }
+    else {
+      $term = new StdClass;
+      $term->vid = $this->options['vid'];
+    }
+    $term->savingFromHouston = TRUE;
+    $this->mapDataToDrupalObject('taxonomy-term', $term, $data);
+    taxonomy_term_save($term);
+
+    $new_data = new StdClass;
+    $new_data->tid = $term->tid;
+
+    $result['status'] = TRUE;
+    $result['object'] = (object) $term; 
+    $result['data'] = $new_data; 
+    return $result;
+  }
+
+  /**
+   * Save data to drupal using the custom callback.
+   */
+  public function saveDrupalWithCallback(&$data) {
     $result = array('status' => FALSE);
     if (isset($this->dataCallback)) {
       $function = $this->dataCallback;
@@ -411,7 +439,7 @@ class Houston_Controllers_Drupal_Drupal7Local implements Houston_Controllers_Con
       }
       // Ensure that the field is an array
       else if (isset($fieldData['fieldType']) && (!isset($object->{$fieldData['field']}) || is_array($object->{$fieldData['field']}))) {
-        $language = isset($object->language) ? $object->language : 'und';
+        $language = (isset($object->language) && $object->language) ? $object->language : LANGUAGE_NONE;
         if (!isset($object->{$fieldData['field']})) {
           $object->{$fieldData['field']} = array();
         }
