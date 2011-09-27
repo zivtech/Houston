@@ -96,12 +96,23 @@ class Houston_Application extends Houston_DataObject {
   /**
    * Get the connector type for a given controller.
    *
-   * @param string $controller
+   * @param string $controllerName
    */
   public function getControllerType($controllerName) {
       // We want errors if the controller doesn't exist.
     $controller = $this->config->config['controllers'][$controllerName];
     return $controller['controller'];
+  }
+
+  /**
+   * Get the connector configuration for a given controller.
+   *
+   * @param string $controllerName
+   */
+  public function getControllerConfig($controllerName) {
+      // We want errors if the controller doesn't exist.
+    $controller = $this->config->config['controllers'][$controllerName];
+    return isset($controller['config']) ? $controller['config'] : array();
   }
 
   /**

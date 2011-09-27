@@ -377,7 +377,9 @@ abstract class Houston_DataObject {
         if ($controllerData['enabled']) {
           // Load controller code and instantiate the controller.
           $className = $controllerData['controller'];
-          $config = $controllerData['config'];
+          $globalConfig = Zend_Registry::get('Houston_Application')->getControllerConfig($controller);
+          // Use the global configuration, but allow overrides.
+          $config = array_merge($globalConfig, $controllerData['config']);
           // is this right?
           $config['db'] = $this->db;
           $config['fieldMap'] = $this->getControllerFieldmap($controller, $fullFieldData = TRUE);
