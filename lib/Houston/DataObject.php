@@ -609,8 +609,13 @@ abstract class Houston_DataObject {
       if (isset($fieldMap[$field]['db']['field'])) {
         $this->$field = $externalId;
         if ($id = $this->getHoustonIdFromExternalId($externalId, $fieldMap[$field]['db']['field'])) {
-          // TODO: is there any reason not 'getLoadedObject' here?
-          return $this->load($id, $loadingController);
+          // If we're not loading from some specific connection, then load the cached object.
+          if (is_null($loadingController)) {
+            return Zend_Registry::get('Houston_Application')->getLoadedObject($id, $this->getObjectType());
+          }
+          else {
+            return $this->load($id, $loadingController);
+          }
         }
         else if ($saveNew) {
           // If we don't have this locally, then this will try to to grab it from the designated controller
