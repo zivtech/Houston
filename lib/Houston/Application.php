@@ -60,7 +60,7 @@ class Houston_Application extends Houston_DataObject {
    * @param mixed $id
    * @return void
    */
-  public function getLoadedObject($type, $id) {
+  public function getLoadedObject($id, $type) {
 
     static $objects = array();
     if (!isset($objects[$type . '_' . $id])) {

@@ -71,6 +71,25 @@ function houston_get_data_object($class_name) {
 }
 
 /**
+ * Load an object from the templeton application.
+ *
+ * @param string $type
+ * @param int $templeton_id 
+ * @return object
+ */
+function houston_load_houston_object($id, $type) {
+  if (is_numeric($id)) {
+    $application = Zend_Registry::get('Houston_Application');
+    // This is stored in a static array in the application class.
+    $object = $application->getLoadedObject($id, $type);
+  }
+  else {
+    $object = houston_get_data_object($type);
+  }
+  return $object;
+} 
+
+/**
  * Implements hook_menu().
  */
 function houston_menu() {

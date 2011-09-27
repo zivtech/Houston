@@ -154,7 +154,7 @@ class Houston_Queue extends Houston_DataObject {
       $this->updateStatusFlag($item, self::PROCESSING);
 
       $application = Zend_Registry::get('Houston_Application', Houston_DataObject::factory('Houston_Application', array('db' => $this->db)));
-      $queueItemObject = $application->getLoadedObject($item->type, $item->local_id);
+      $queueItemObject = $application->getLoadedObject($item->local_id, $item->type);
 
       $queueItemData = unserialize($item->data);
 
