@@ -87,7 +87,27 @@ function houston_load_houston_object($id, $type) {
     $object = houston_get_data_object($type);
   }
   return $object;
-} 
+}
+
+/**
+ * Load up a Houston object using a drupal id.
+ *  Use houston_load_houston_object for loading with a houston id.
+ * 
+ * @param int $drupal_id 
+ * @param string $type 
+ * @param boolean $reload
+ * @return object Houston_DataObject 
+ */
+function houston_load_houston_object_with_local_id($drupal_id, $type, $reload = FALSE) {
+  static $objects = array();
+  if (!isset($objects[$type][$drupal_id]) || $reload) {
+    $objects[$type][$drupal_id] = houston_get_data_object($type);
+    // Note: This controller name should be the local instance setup in houston.
+    $controller = variable_get('houston_local_drupal_controller', 'drupal');
+    $objects[$type][$drupal_id]->loadWithExternalId($drupal_id, $controller);
+  }
+  return $objects[$type][$drupal_id];
+}
 
 /**
  * Implements hook_menu().
