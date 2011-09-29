@@ -704,6 +704,7 @@ abstract class Houston_DataObject {
       $results = $this->db->fetchAll($sql, $arguments);
       if (is_array($results) && count($results)) {
         foreach ($results as $result) {
+          // TODO: getLoadedObject here
           $child = Houston_DataObject::factory($childData['object'], array('db' => $this->db));
           $child->load($result->id);
           $child->parentInfo = array(

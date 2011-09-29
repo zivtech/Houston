@@ -110,6 +110,21 @@ function houston_load_houston_object_with_local_id($drupal_id, $type, $reload = 
 }
 
 /**
+ * Load up a Houston object using a drupal id.
+ *  Use houston_load_houston_object for loading with a houston id.
+ * 
+ * @param int $id 
+ * @param string $type 
+ * @param boolean $logical
+ * TODO: return value
+ * @return void
+ */
+function houston_delete_houston_object($id, $type, $logical = TRUE) {
+  $object = houston_load_houston_object($id, $type);
+  $object->delete($logical);
+}
+
+/**
  * Implements hook_menu().
  */
 function houston_menu() {
