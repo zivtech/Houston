@@ -73,7 +73,7 @@ class Houston_Controllers_Drupal_Drupal7Local implements Houston_Controllers_Con
     }
     if (in_array($this->type, array('node', 'user'))) {
       $this->entityType = $this->type;
-      if ($this->type == 'user' && is_array($config['profile2'])) {
+      if ($this->type == 'user' && isset($config['profile2'])) {
         $this->profiles = $config['profile2'];
       }
     }

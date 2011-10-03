@@ -710,6 +710,7 @@ abstract class Houston_DataObject {
           $child->parentInfo = array(
             'type' => $this->objectType,
             'id' => $this->getId(),
+            'data' => $this->getData(),
           );
           $this->{$type}[$child->getUniqueName()] = $child;
         }
@@ -1098,8 +1099,15 @@ abstract class Houston_DataObject {
   /**
    *
    */
-  public function getId() {
-    return $this->getHoustonId();
+  public function getId($controller = NULL) {
+    if (is_null($controller)) {
+      return $this->getHoustonId();
+    }
+    $field = $this->getControllerIdField($controller);
+    if (isset($this->{$field})) {
+      return $this->{$field};
+    }
+    return FALSE;
   }
 
   /**
