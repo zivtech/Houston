@@ -423,7 +423,7 @@ class Houston_Controllers_Drupal_Drupal7Local implements Houston_Controllers_Con
    * Map local data to drupal objects.
    */
   function mapDataToDrupalObject($type, &$object, $data, $fieldMap = NULL) {
-    // TODO: Break out the types of objects into separate functions.
+    // TODO: Break out the types of objects into separate functions?
     // TODO: This can be changed around to be more generic for drupal 7.
     if (is_null($fieldMap)) {
       $fieldMap = $this->fieldMap;
@@ -449,6 +449,12 @@ class Houston_Controllers_Drupal_Drupal7Local implements Houston_Controllers_Con
             break;
           case 'user_reference':
             $object->{$fieldData['field']}[$language][0]['uid'] = $data->{$fieldData['field']};
+            break;
+          case 'list':
+            $field_info = field_info_field($fieldData['field']);
+            $allowed_values = $field_info['settings']['allowed_values'];
+            $value = array_search($data->{$fieldData['field']}, $allowed_values);
+            $object->{$fieldData['field']}[$language][0]['value'] = $value;
             break;
           default:
             $object->{$fieldData['field']}[$language][0]['value'] = $data->{$fieldData['field']};
@@ -485,6 +491,11 @@ class Houston_Controllers_Drupal_Drupal7Local implements Houston_Controllers_Con
               break;
             case 'user_reference':
               $data->$field = $values[0]['uid'];
+              break;
+            case 'list':
+              $field_info = field_info_field($field);
+              $allowed_values = $field_info['settings']['allowed_values'];
+              $data->$field = $allowed_values[$values[0]['value']];
               break;
             default:
               $data->$field = $values[0]['value'];
