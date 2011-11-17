@@ -142,10 +142,24 @@ class Houston_Controllers_Salesforce_SalesForceClient extends SforceEnterpriseCl
     }
     $response = $this->retrieve(implode($fields, ', '), $this->type, array($data->Id));
     if (is_object($response)) {
+      $responseData = new stdClass;
+      foreach ($response as $field => $value) {
+        // Salesforce allows us to retrieve information
+        // about realted objects. They are returned as
+        // stdClass objects.
+        if (is_object($responseData)) {
+          foreach ($responseData as $objectField => $objectValue) {
+            $responseData->{$field . '.' . $objectField} = $objectValue;
+          }
+        }
+        else {
+          $responseData->{$field} = $value;
+        }
+      }
       $result = array(
         'status' => TRUE,
-        'data' => $response,
-        'result' => $response,
+        'data' => $responseData,
+        'result' => $responseData,
       );
     }
     else {
