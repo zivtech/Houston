@@ -129,7 +129,7 @@ function houston_delete_houston_object($id, $type, $logical = TRUE) {
  */
 function houston_menu() {
   $items = array();
-  $items['houston/service/salesforce'] = array(
+  $items['houston/services/salesforce'] = array(
     'title' => 'Salesforce Service',
     'page callback' => 'houston_service_url',
     'page arguments' => array(2),
