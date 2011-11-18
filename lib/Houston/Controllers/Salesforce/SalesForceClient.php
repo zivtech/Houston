@@ -137,9 +137,14 @@ class Houston_Controllers_Salesforce_SalesForceClient extends SforceEnterpriseCl
       );
     }
     $fields = array();
-    foreach ($data as $name => $value) {
-      $fields[] = $name;
+    foreach ($this->fieldMap as $fieldName => $fieldData) {
+      if (isset($fieldData['field'])) {
+        if (!isset($fieldData['load']) || $fieldData['load']) {
+          $fields[] = $fieldData['field'];
+        }
+      }
     }
+
     $response = $this->retrieve(implode($fields, ', '), $this->type, array($data->Id));
     if (is_object($response)) {
       $responseData = new stdClass;
@@ -147,8 +152,8 @@ class Houston_Controllers_Salesforce_SalesForceClient extends SforceEnterpriseCl
         // Salesforce allows us to retrieve information
         // about realted objects. They are returned as
         // stdClass objects.
-        if (is_object($responseData)) {
-          foreach ($responseData as $objectField => $objectValue) {
+        if (is_object($value)) {
+          foreach ($value as $objectField => $objectValue) {
             $responseData->{$field . '.' . $objectField} = $objectValue;
           }
         }
