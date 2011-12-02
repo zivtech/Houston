@@ -280,11 +280,13 @@ abstract class Houston_DataObject {
     }
     foreach ($data as $name => $value) {
       if (isset($translation[$name])) {
-        if (isset($fieldMap[$translation[$name]['localField']]['reference'])) {
+        $controllerField = $translation[$name]['controllerField'];
+        $localField = $translation[$name]['localField'];
+        if (isset($fieldMap[$localField]['reference'])) {
           // If this is a reference field, then we need to map the data
           // Load referenced object with source value, then lookup destination value
           // TODO: Cache this data or object?
-          $fieldData = $fieldMap[$translation[$name]['localField']];
+          $fieldData = $fieldMap[$localField];
           $object = Houston_DataObject::factory($fieldData['reference']['objectType'], array('db' => $this->db));
           if ($object->loadWithExternalId($value, $sourceController)) {
             $objectData = $object->getData();
@@ -296,14 +298,14 @@ abstract class Houston_DataObject {
         }
 
         // Data may or may not need to be altered for translation.
-        if (isset($fieldMap[$translation[$name]['localField']][$destController]['data alter'])) {
-          $output->{$translation[$name]['controllerField']} = $this->{$fieldMap[$translation[$name]['localField']][$destController]['data alter']}('transmit', $value);
+        if (isset($fieldMap[$localField][$destController]['data alter'])) {
+          $output->{$controllerField} = $this->{$fieldMap[$localField][$destController]['data alter']}('transmit', $value);
         }
-        else if (isset($fieldMap[$translation[$name]['localField']][$sourceController]['data alter'])) {
-          $output->{$translation[$name]['controllerField']} = $this->{$fieldMap[$translation[$name]['localField']][$sourceController]['data alter']}('retrieve', $value);
+        else if (isset($fieldMap[$localField][$sourceController]['data alter'])) {
+          $output->{$controllerField} = $this->{$fieldMap[$localField][$sourceController]['data alter']}('retrieve', $value);
         }
         else {
-          $output->{$translation[$name]['controllerField']} = $value;
+          $output->{$controllerField} = $value;
         }
       }
     }
@@ -416,6 +418,7 @@ abstract class Houston_DataObject {
         // corresponds to a field in a given controller, populate
         // the data object with that attribute.
         $data = $this->translateData('local', $controller, $this);
+        // TODO: Do we need the fieldMap here?  It's sent over elsewhere.
         $result = $this->controllers[$controller]->$operation($data, $this->getFieldmap());
         // If result status is TRUE the operation succeeded, merge any data back into our op.
         if ($result['status']) {
