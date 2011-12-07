@@ -201,6 +201,7 @@ class Houston_Queue extends Houston_DataObject {
     if ($result = $this->db->fetchRow($sql, array($item->localId, $item->type))){
       $this->deleteItemFromQueue($result->qid);
     }
+    $item->data = isset($item->data) ? $item->data : '';
 
     $data = array(
       'type' => $item->type,

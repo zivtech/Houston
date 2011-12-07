@@ -338,7 +338,7 @@ class Houston_Controllers_Drupal_Drupal7Local implements Houston_Controllers_Con
  
     $success = user_save($account, (array) $edit);
 
-    if (is_array($this->profiles)) {
+    if (isset($this->profiles) && is_array($this->profiles)) {
       $profiles = profile2_load_by_user($account);
       foreach ($this->profiles as $profileType) {
         $fieldMap = $this->getUserProfileFieldMap($profileType);

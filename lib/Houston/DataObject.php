@@ -58,6 +58,11 @@ abstract class Houston_DataObject {
   protected $saveChildren = TRUE;
 
   /**
+   * The mode of this particular object.
+   */
+  protected $mode = FALSE;
+
+  /**
    * An array of File objects.
    */
   protected $files = array();
