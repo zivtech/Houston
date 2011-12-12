@@ -456,6 +456,9 @@ class Houston_Controllers_Drupal_Drupal7Local implements Houston_Controllers_Con
             $value = array_search($data->{$fieldData['field']}, $allowed_values);
             $object->{$fieldData['field']}[$language][0]['value'] = $value;
             break;
+          case 'boolean':
+            $object->{$fieldData['field']}[$language][0]['value'] = (int) $data->{$fieldData['field']};
+            break;
           default:
             $object->{$fieldData['field']}[$language][0]['value'] = $data->{$fieldData['field']};
             break;
