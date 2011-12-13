@@ -1216,8 +1216,10 @@ abstract class Houston_DataObject {
   /**
    * Permanently delete an object from the local Houston application.
    */
-  public function delete($logical = TRUE) {
-    // TODO: Implement child/relation object deleting
+  public function delete($logical = TRUE, $deleteChildren = FALSE) {
+    if (!$this->getId()) {
+      return;
+    }
     $this->callControllers('delete', 'local');
     if (!$logical) {
       $sql = "id = $this->id";
@@ -1226,6 +1228,42 @@ abstract class Houston_DataObject {
     else {
       $this->deleted = TRUE;
       $this->saveToHouston();
+    }
+
+    // TODO: Implement child/relation object deleting
+    // We may want different kinds of parent child relations
+    // in the same way salesforce does (ie having children
+    // that can't exist without a parent).
+    if ($deleteChildren) {
+      $this->loadChildren();
+      $this->deleteChildren(NULL, $logical);
+    }
+  }
+
+  /**
+   * Delete children of a certain type.
+   */
+  public function deleteChildren($type = NULL, $logical = TRUE) {
+    $children = $this->getChildObjectList();
+    if (count($children) && is_array($children)) {
+      // Delete a specific child type.
+      if (!is_null($type)) {
+        if (is_array($this->$type) && count($this->$type)) {
+          foreach ($this->$type as $child) {
+            $child->delete($logical);
+          }
+        }
+      }
+      // Delete all children.
+      else {
+        foreach ($children as $name => $child_data) {
+          if (is_array($this->$name) && count($this->$name)) {
+            foreach ($this->$name as $child) {
+              $child->delete($logical);
+            }
+          }
+        }
+      }
     }
   }
 

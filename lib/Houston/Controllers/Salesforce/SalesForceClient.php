@@ -178,9 +178,9 @@ class Houston_Controllers_Salesforce_SalesForceClient extends SforceEnterpriseCl
 
   public function create($data) {
 
-    $type = $this->type;
     // TODO: decide if we're going to use the Zend debugLog and move this
     // into the Controller object if necessary.
+    $type = $this->type;
     if ($this->connect() && !$this->reachedMaxSalesForceApiHits()) {
       $this->debugLog("Creating SF object $type with " . print_r($data, TRUE));
       try {
@@ -258,6 +258,7 @@ class Houston_Controllers_Salesforce_SalesForceClient extends SforceEnterpriseCl
       'data' => array()
     );
 
+    $type = $this->type;
     $ids = array($data->Id);
     if ($this->connect() && !$this->reachedMaxSalesForceApiHits()) {
       $this->debugLog("Deleting SF objects $type with " . print_r($ids, TRUE));

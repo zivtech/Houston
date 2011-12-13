@@ -118,9 +118,9 @@ function houston_load_houston_object_with_local_id($drupal_id, $type, $reload = 
  * TODO: return value
  * @return void
  */
-function houston_delete_houston_object($id, $type, $logical = TRUE) {
+function houston_delete_houston_object($id, $type, $logical = TRUE, $delete_children = FALSE) {
   $object = houston_load_houston_object($id, $type);
-  $object->delete($logical);
+  $object->delete($logical, $delete_children);
 }
 
 /**
@@ -132,10 +132,10 @@ function houston_delete_houston_object($id, $type, $logical = TRUE) {
  * @param boolean $logical
  * @return void
  */
-function houston_delete_houston_object_with_local_id($drupal_id, $type, $logical = TRUE) {
+function houston_delete_houston_object_with_local_id($drupal_id, $type, $logical = TRUE, $delete_children = FALSE) {
   $object = houston_load_houston_object_with_local_id($drupal_id, $type);
   if ($object->getId()) {
-    $object->delete($logical);
+    $object->delete($logical, $delete_children);
   }
 }
 
