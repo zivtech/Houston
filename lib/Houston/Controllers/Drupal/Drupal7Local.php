@@ -488,21 +488,23 @@ class Houston_Controllers_Drupal_Drupal7Local implements Houston_Controllers_Con
         if (isset($fieldData['fieldType']) && is_array($object->$controllerName)) {
           // TODO: Multi-valued fields
           $values = field_get_items($this->entityType, $object, $controllerName);
-          switch ($fieldData['fieldType']) {
-            case 'node_reference':
-              $data->$field = $values[0]['nid'];
-              break;
-            case 'user_reference':
-              $data->$field = $values[0]['uid'];
-              break;
-            case 'list':
-              $field_info = field_info_field($field);
-              $allowed_values = $field_info['settings']['allowed_values'];
-              $data->$field = $allowed_values[$values[0]['value']];
-              break;
-            default:
-              $data->$field = $values[0]['value'];
-              break;
+          if (isset($values[0])) {
+            switch ($fieldData['fieldType']) {
+              case 'node_reference':
+                $data->$field = $values[0]['nid'];
+                break;
+              case 'user_reference':
+                $data->$field = $values[0]['uid'];
+                break;
+              case 'list':
+                $field_info = field_info_field($field);
+                $allowed_values = $field_info['settings']['allowed_values'];
+                $data->$field = $allowed_values[$values[0]['value']];
+                break;
+              default:
+                $data->$field = $values[0]['value'];
+                break;
+            }
           }
         }
         else {

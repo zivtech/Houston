@@ -149,7 +149,7 @@ function houston_menu() {
     'page callback' => 'houston_service_url',
     'page arguments' => array(2),
     // TODO: Implement ip checking?
-    'access callback' => TRUE,//'houston_allowed_ips',
+    'access callback' => 'houston_allowed_ips',
     'menu_name' => 'houston',
     'type' => MENU_CALLBACK,
   );
@@ -177,7 +177,6 @@ function houston_service_url($controller) {
  * Access callback for allwed salesfoce ips.
  */
 function houston_allowed_ips() {
-  require_once(SALESFORCE_DIR .'/salesforce.class.inc');
   $ip = $_SERVER['REMOTE_ADDR'];
   $ips = variable_get('houston_allowed_ips', FALSE);
   $allowed_ips = ($ips === FALSE) ? houston_default_allowed_ips() : explode("\n", $ips);
@@ -201,7 +200,7 @@ function houston_allowed_ips() {
  * Adapted from http://stackoverflow.com/questions/594112
  */
 function _houston_cidr_match($ip, $range) {
-  list ($subnet, $bits) = split('/', $range);
+  list ($subnet, $bits) = explode('/', $range);
   $ip = ip2long($ip);
   $subnet = ip2long($subnet);
   // Sanity check: ip2long() returns FALSE for an invalid IP address.
@@ -237,7 +236,7 @@ function houston_fieldmap_settings_access($fieldmap_id, $perm) {
 function houston_salesforce_service_url($controller) {
   // Needed for the reference to SObject in parse_message, otherwise it just seems to die
   // when it tries to call new SObject()
-  require_once 'Houston/Controllers/Salesforce/phptoolkit/soapclient/SforcePartnerClient.php';
+  require_once 'phptoolkit/soapclient/SforcePartnerClient.php';
 
   $content = file_get_contents('php://input');
   if (empty($content)) {
