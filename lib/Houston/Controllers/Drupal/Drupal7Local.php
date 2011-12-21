@@ -332,7 +332,16 @@ class Houston_Controllers_Drupal_Drupal7Local implements Houston_Controllers_Con
   public function updateDrupalUser(&$data) {
     $result = array('status' => FALSE);
     $account = user_load($data->uid, $reset = TRUE);
-    $edit = new stdClass;
+
+    // TODO: Should this just be run whenver update is run
+    // for anything?
+    foreach($this->fieldMap as $field => $info) {
+      if (isset($info['update']) && !$info['update']) {
+        unset($data->{$info['field']});
+      }
+    }
+
+    $edit = new StdClass;
     $this->mapDataToDrupalObject('user', $edit, $data);
     $edit->savingFromHouston = TRUE;
  
