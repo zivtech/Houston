@@ -460,9 +460,9 @@ class Houston_Controllers_Drupal_Drupal7Local implements Houston_Controllers_Con
             $object->{$fieldData['field']}[$language][0]['uid'] = $data->{$fieldData['field']};
             break;
           case 'list':
-            $field_info = field_info_field($fieldData['field']);
-            $allowed_values = $field_info['settings']['allowed_values'];
-            $value = array_search($data->{$fieldData['field']}, $allowed_values);
+            $fieldInfo = field_info_field($fieldData['field']);
+            $allowedValues = $fieldInfo['settings']['allowed_values'];
+            $value = array_search($data->{$fieldData['field']}, $allowedValues);
             $object->{$fieldData['field']}[$language][0]['value'] = $value;
             break;
           case 'boolean':
@@ -506,9 +506,9 @@ class Houston_Controllers_Drupal_Drupal7Local implements Houston_Controllers_Con
                 $data->$field = $values[0]['uid'];
                 break;
               case 'list':
-                $field_info = field_info_field($field);
-                $allowed_values = $field_info['settings']['allowed_values'];
-                $data->$field = $allowed_values[$values[0]['value']];
+                $fieldInfo = field_info_field($field);
+                $allowedValues = $fieldInfo['settings']['allowed_values'];
+                $data->$field = isset($allowedValues[$values[0]['value']]) ? $allowedValues[$values[0]['value']] : '';
                 break;
               default:
                 $data->$field = $values[0]['value'];
