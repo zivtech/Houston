@@ -237,6 +237,15 @@ class Houston_Controllers_Salesforce_SalesForceClient extends SforceEnterpriseCl
       try {
         $result = parent::retrieve($fields, $type, $ids);
         //$this->logSaleforceQuery('retrieve', $result);
+
+        // Retrieve doesn't grab deleted entries.  If IsDeleted
+        // is a field and nothing was retrieved then see if the
+        // object was actually deleted.
+        $field_list = explode(', ', $fields);
+        if (!$result && in_array('IsDeleted', $field_list)) {
+          $result = new stdClass();
+          $result->IsDeleted = $this->isDeleted(reset($ids));
+        }
         return $result;
       }
       catch (Exception $e) {
@@ -279,6 +288,23 @@ class Houston_Controllers_Salesforce_SalesForceClient extends SforceEnterpriseCl
     }
     return $result;
 	}
+
+  /**
+   * Determine if this item has been deleted.
+   *
+   * @param $id
+   */
+  public function isDeleted($id) {
+    if ($this->connect() && !$this->reachedMaxSalesForceApiHits()) {
+      $soql = "SELECT Id, isDeleted From %s WHERE Id = '%s' AND IsDeleted = true";
+      $soql = sprintf($soql, $this->type, $id);
+      $results = $this->queryAll($soql);
+      if (isset($results->records) && count($results->records)) {
+        return TRUE;
+      }
+    }
+    return FALSE;
+  }
 
   /**
    * Map data from the controller into the data object.
