@@ -423,6 +423,13 @@ abstract class Houston_DataObject {
         // corresponds to a field in a given controller, populate
         // the data object with that attribute.
         $data = $this->translateData('local', $controller, $this);
+
+        // Remove any fields that are not in use for this operation and controller.
+        foreach ($this->getFieldMap() as $field) {
+          if (isset($field[$controller][$operation]) && !$field[$controller][$operation]) {
+            unset($data->{$field[$controller]['field']});
+          }
+        }
         // TODO: Do we need the fieldMap here?  It's sent over elsewhere.
         $result = $this->controllers[$controller]->$operation($data, $this->getFieldmap());
         // If result status is TRUE the operation succeeded, merge any data back into our op.
