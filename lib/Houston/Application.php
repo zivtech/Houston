@@ -51,6 +51,11 @@ class Houston_Application extends Houston_DataObject {
     // Houston_Config storing all configuration settings.
     // TODO: Reconsider best way to do this! (Note: Drupal kills globals)
     $this->config = new Houston_Config();
+    if (isset($this->config->config['debugLog']) && file_exists($this->config->config['debugLog'])) {
+      $log = new Zend_Log();
+      $log->addWriter(new Zend_Log_Writer_Stream($this->config->config['debugLog']));
+      Zend_Registry::set('debug_log', $log);
+    }
   }
 
   /**
