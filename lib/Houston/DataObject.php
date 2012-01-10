@@ -443,7 +443,7 @@ abstract class Houston_DataObject {
           // If we fail loading, then we don't need to lock the others, just lock saving.
           // Adding to the queue without a houston id is a problem.  If used withing the
           // flow of the application, there should already be one here.
-          $this->addToQueue($operation, $controller);
+          $this->addToQueue($operation, $controller, $result);
         }
         // TODO: The status only needs to be set on certain operations (ie save)
         $this->setDataStatus($operation, $controller, !$result['status']);
@@ -493,7 +493,7 @@ abstract class Houston_DataObject {
         // Adding to the queue without a houston id is a problem.  If used within the
         // flow of the application, there should already be one here.
         if ($queue) {
-          $this->addToQueue($operation, $controller);
+          $this->addToQueue($operation, $controller, $result);
         }
       }
       $this->setDataStatus($operation, $controller, !$result['status']);
@@ -1354,13 +1354,14 @@ abstract class Houston_DataObject {
    * @param $controller
    *   (string) The controller on which to run the operation.
    */
-  public function addToQueue($operation, $controller) {
+  public function addToQueue($operation, $controller, $data = '') {
     $queueItem = new stdClass();
     $queueItem->type = $this->objectType;
     // If there is no id, then this will fail spectacularly.
     $queueItem->localId = $this->getId();
     $queueItem->operation = $operation;
     $queueItem->controller = $controller;
+    $queueItem->data = $data;
 
     // Add blockers
     // TODO: Currently we only support one blocker.
