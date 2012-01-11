@@ -13,9 +13,6 @@ class Houston_Queue extends Houston_DataObject {
   /**
    * TODO: don't use constants for things that could be tunable.
    */
-  // The number of items to load into the queue.
-  const NUMBER_ITEMS_TO_PROCESS = 120;
-
   // The maximum amount of time we should let a process measured in seconds.
   const MAXIMUM_PROCESSING_TIME = 300;
 
@@ -31,6 +28,9 @@ class Houston_Queue extends Houston_DataObject {
   // The status of a queue item.
   const READY = 0;
   const PROCESSING = 1;
+
+  // The number of items to load into the queue.
+  protected $numberToProcess = 120;
 
   /**
    * Called by base object contstructor.
@@ -89,7 +89,7 @@ class Houston_Queue extends Houston_DataObject {
             WHERE status_flag = " . self::READY . "
             AND process_count < " . self::MAX_PROCESS . "
             ORDER BY timestamp
-            LIMIT 0, " . self::NUMBER_ITEMS_TO_PROCESS;
+            LIMIT 0, " . $this->numberToProcess;
     foreach($this->db->fetchAll($sql, array()) as $item) {
       $this->queueObjects[$item->type . '_' . $item->local_id] = $item;
     }
@@ -287,5 +287,12 @@ class Houston_Queue extends Houston_DataObject {
     return $this->db->update($this->table, $data, 'qid = ' . $item->qid);
   }
 
+  /**
+   * Set the number of items to process in a
+   *  single run.
+   */
+  public function setNumberToProcess($count) {
+    $this->numberToProcess = (int) $count;
+  }
 }
 

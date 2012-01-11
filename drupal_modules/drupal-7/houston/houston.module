@@ -157,6 +157,17 @@ function houston_menu() {
 }
 
 /**
+ * Implements hook_cron().
+ */
+function houston_cron() {
+  if (variable_get('houston_run_cron', FALSE)) {
+    $queue = houston_get_data_object('Houston_Queue');
+    $queue->setNumberToProcess(variable_get('houston_cron_items_to_process', 10));
+    $queue->cronProcessQueue();
+  }
+}
+
+/**
  *  Page callback for houston services.
  *   Map to proper service handling based on
  *   controller type.

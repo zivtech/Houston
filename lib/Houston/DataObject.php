@@ -473,6 +473,12 @@ abstract class Houston_DataObject {
       if ($this->getDataStatus($operation, $controller)) {
         return $result;
       }
+      // Remove any fields that are not in use for this operation and controller.
+      foreach ($this->getFieldMap() as $field) {
+        if (isset($field[$controller][$operation]) && !$field[$controller][$operation]) {
+          unset($data->{$field[$controller]['field']});
+        }
+      }
       $result = $this->controllers[$controller]->$operation($data, $this->getFieldmap());
       if ($result['status']) {
         $result_data = isset($result['data']) ? $result['data'] : NULL;
