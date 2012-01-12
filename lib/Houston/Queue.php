@@ -211,7 +211,7 @@ class Houston_Queue extends Houston_DataObject {
       'local_blocker_id' => isset($item->localBlockerId) ? $item->localBlockerId : NULL,
       'timestamp' => time(),
       'data' => serialize($item->data),
-      'local_blocker_type' => isset($item->localBlockerType) ? item->localBlockerType : '',
+      'local_blocker_type' => isset($item->localBlockerType) ? $item->localBlockerType : '',
       'status_flag' => self::READY,
     );
 
