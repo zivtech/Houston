@@ -173,10 +173,12 @@ function houston_cron() {
  *   controller type.
  */
 function houston_service_url($controller) {
+  watchdog('houston', t('Access of houston service url'));
   $app = Zend_Registry::get('Houston_Application'); 
   if ($type = $app->getControllerType($controller)) {
     switch ($type) {
       case 'Houston_Controllers_Salesforce_SalesForceClient':
+        watchdog('houston', t('Using %controller on houston service rl.', array('%controller' => $controller)));
         houston_salesforce_service_url($controller);
         break;
     }
@@ -252,12 +254,14 @@ function houston_salesforce_service_url($controller) {
   $content = file_get_contents('php://input');
   if (empty($content)) {
     // TODO: empty request.
+    watchdog('houston', t('Empty houston service request.'));
     return;
   }
   $dom = new DOMDocument();
   $dom->loadXML($content);
   if (empty($dom) || !$dom->hasChildNodes()) {
     // TODO: Failed to parse message.
+    watchdog('houston', t('Houston failed to parse message from %controller', array('%controller' => $controller)));
     _houston_soap_respond('false');
     return;
   }
@@ -318,6 +322,7 @@ function _houston_parse_salesforce_message($domDoc) {
     $result[$obj->Id] = $obj;
   }
 
+  watchdog('houston', t('Houston parsed message <pre>%result</pre>', array('%result' => print_r($result, TRUE))));
   return $result;
 }
 
