@@ -208,10 +208,10 @@ class Houston_Queue extends Houston_DataObject {
       'operation' => $item->operation,
       'controller' => $item->controller,
       'local_id' => $item->localId,
-      'local_blocker_id' => $item->localBlockerId,
+      'local_blocker_id' => isset($item->localBlockerId) ? $item->localBlockerId : NULL,
       'timestamp' => time(),
       'data' => serialize($item->data),
-      'local_blocker_type' => $item->localBlockerType,
+      'local_blocker_type' => isset($item->localBlockerType) ? item->localBlockerType : '',
       'status_flag' => self::READY,
     );
 
