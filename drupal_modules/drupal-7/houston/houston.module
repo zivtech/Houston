@@ -103,6 +103,7 @@ function houston_load_houston_object_with_local_id($drupal_id, $type, $reload = 
   if (!isset($objects[$type][$drupal_id]) || $reload) {
     $objects[$type][$drupal_id] = houston_get_data_object($type);
     // Note: This controller name should be the local instance setup in houston.
+    // There can only be one local instance, if there is one.
     $controller = variable_get('houston_local_drupal_controller', 'drupal');
     $objects[$type][$drupal_id]->loadWithExternalId($drupal_id, $controller);
   }
@@ -157,6 +158,18 @@ function houston_menu() {
 }
 
 /**
+ * Implements hook_permission().
+ */
+function houston_permission() {
+  return array(
+    'administer houston' => array(
+      'title' => t('Administer Houston'),
+      'description' => t('View and update houston data.'),
+    ),
+  );
+}
+
+/**
  * Implements hook_cron().
  */
 function houston_cron() {
@@ -165,6 +178,17 @@ function houston_cron() {
     $queue->setNumberToProcess(variable_get('houston_cron_items_to_process', 10));
     $queue->cronProcessQueue();
   }
+}
+
+/**
+ * Implements hook_theme().
+ */
+function houston_theme() {
+  return array(
+    'houston_display_object_data' => array(
+      'variables' => array('object' => NULL),
+    ),
+  );
 }
 
 /**
@@ -344,5 +368,21 @@ function _houston_soap_respond($response = 'true') {
       </soapenv:Body>
   </soapenv:Envelope>
   ';
+}
+
+
+/**
+ * Page callback for displaying the data from a houston object.
+ */
+function theme_houston_display_object_data($variables) {
+  $list = array();
+  $object = $variables['object'];
+  if (is_object($object)) {
+    foreach ($object->getHumanReadableData() as $field) {
+     $list[] = '<strong>' . $field['title'] . ':</strong> ' . $field['value'];
+    }
+    return theme('item_list', array('items' => $list));
+  }
+  return t('Invalid houston object id %id or type %type.', array('%id' => $object_id, '%type' => $object_type));
 }
 
