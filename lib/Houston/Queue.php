@@ -7,6 +7,11 @@ require_once 'Houston/Application.php';
  * This object provides our basic functionality for handling Queue's of items that need to be processed.
  *
  * TODO JR: type hinting throughout.
+ * TODO: The queue does not fall under many
+ *  of the assumptions of the Houston_DataObject class.
+ *  We load it up as one thing to run the queue, but
+ *  each item in the queue can be treated as a separate
+ *  item.  How this works needs to be hammered down.
  */
 class Houston_Queue extends Houston_DataObject {
 
@@ -31,12 +36,15 @@ class Houston_Queue extends Houston_DataObject {
 
   // The number of items to load into the queue.
   protected $numberToProcess = 120;
+  protected $baseTable = '.houston_queue';
 
   /**
    * Called by base object contstructor.
    */
   public function init() {
+    // TODO: Fix the base table situation.
     $this->table = HOUSTON_DB . self::BASE_TABLE;
+    $this->baseTable = $this->table;
   }
 
   /**
@@ -96,6 +104,17 @@ class Houston_Queue extends Houston_DataObject {
     // TODO JR: don't do this here. failure at this point can lead to normal
     //          queue processing failure. kind of ironic yeah?
     $this->resetStalledItems();
+  }
+
+  /**
+   * Load a single queue item.
+   */
+  public function loadSingleQueueItem($qid) {
+
+    $sql = "SELECT *
+            FROM {$this->table}
+            WHERE qid = ?";
+    return $this->db->fetchRow($sql, array($qid));
   }
 
   /**
@@ -295,4 +314,3 @@ class Houston_Queue extends Houston_DataObject {
     $this->numberToProcess = (int) $count;
   }
 }
-

@@ -1,0 +1,8 @@
+name = Houston Queue Admin Utility
+description = A utility module that provides an admin interface for the queue
+package = Houston
+core = 7.x
+dependencies[] = houston
+
+files[] = houston_queue.views.inc
+files[] = views/handlers/houston_queue_handler_field_queue_item_remove.inc
