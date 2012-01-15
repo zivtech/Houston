@@ -713,7 +713,8 @@ abstract class Houston_DataObject {
       $child = Houston_DataObject::factory($childData['object'], array('db' => $this->db));
       $fieldMap = $child->getFieldMap();
       $sql = "SELECT id FROM " . HOUSTON_DB . $childData['table'] . "
-          WHERE " . $fieldMap[$childData['reference field']]['db']['field'] . "  = ?";
+          WHERE " . $fieldMap[$childData['reference field']]['db']['field'] . "  = ?
+          AND deleted = 0";
       $arguments = array($this->getId());
       if ($mode) {
         $sql .= " AND " . $fieldMap[$childData['mode field']]['db']['field'] . " = ?";
