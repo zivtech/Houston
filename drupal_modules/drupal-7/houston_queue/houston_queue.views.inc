@@ -5,6 +5,13 @@
  */
 function houston_queue_views_data() {
   $data = array();
+
+  // TODO: The table should be setup by the application
+  // so, we don't know if it necessarily exists here.
+  // It still needs to be hammered out.
+  if (!db_table_exists('houston_queue')) {
+    return $data;
+  }
   $schema['houston_queue'] = array(
     'description' => 'Stores Queue of Objects for Processing',
     'fields' => array(
