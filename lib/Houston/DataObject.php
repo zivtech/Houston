@@ -323,13 +323,10 @@ abstract class Houston_DataObject {
    * @param mixed $message
    */
   public static function debugLog($message) {
-    print_r($message);
-    if ($this->log) {
-      try {
-        Zend_Registry::get('debug_log')->log($message, Zend_Log::INFO);
-      }
-      catch (Exception $e) { }
+    try {
+      Zend_Registry::get('debug_log')->log($message, Zend_Log::INFO);
     }
+    catch (Exception $e) { }
   }
 
   /**
