@@ -43,11 +43,6 @@ abstract class Houston_DataObject {
   protected $id = FALSE;
 
   /**
-   * The local object mode, if relevant.
-   */
-  protected $mode = NULL;
-
-  /**
    * A logical delete flag.
    */
   protected $deleted = FALSE;
