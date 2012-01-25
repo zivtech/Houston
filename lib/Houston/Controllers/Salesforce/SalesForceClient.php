@@ -469,11 +469,12 @@ class Houston_Controllers_Salesforce_SalesForceClient extends SforceEnterpriseCl
   /**
    * Execute a SOQL query and return the result array or FALSE on failure
    */
-  public function runSoqlQuery($soql) {
+  public function runSoqlQuery($soql, $queryAll = FALSE) {
 
     if ($this->connect() && !$this->reachedMaxSalesForceApiHits()) {
       try {
-        $result = $this->query("$soql");
+        // Query all allows querying deleted objects.
+        $result = $queryAll ? $this->queryAll("$soql") : $this->query("$soql");
         //$this->logSaleforceQuery('soql', $result);
         $this->debugLog("sent SOQL '$soql', got result:\n" . print_r($result, TRUE));
         return $result;
