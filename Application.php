@@ -1,5 +1,6 @@
 <?php
 
+// TODO: Rename this from Application to Houston.
 require_once 'Houston/DataObject.php';
 // Note: We need to tell houston where the configuration file lives before loading.
 require_once HOUSTON_CONFIG_FILE;
