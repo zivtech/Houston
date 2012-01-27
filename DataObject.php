@@ -1,10 +1,12 @@
 <?php
 
+namespace Houston;
+
 /**
  * This object provides shared functionality
  */
 
-abstract class Houston_DataObject {
+abstract class DataObject {
 
   /**
    * db
