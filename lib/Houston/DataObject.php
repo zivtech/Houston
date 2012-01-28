@@ -6,7 +6,7 @@ namespace Houston;
  * This object provides shared functionality
  */
 
-abstract class DataObject {
+class DataObject implements DataObjectInterface {
 
   /**
    * db
@@ -180,7 +180,7 @@ abstract class DataObject {
    * @param array $conf
    * @return void
    */
-  protected final function __construct(array $conf = NULL) {
+  public function __construct(array $conf = NULL) {
 
     if ($conf) {
       $this->processConfig($conf);
@@ -357,7 +357,9 @@ abstract class DataObject {
   public function init() {
 
     $this->getControllers();
-    $this->baseTable = HOUSTON_DB . $this->baseTable;
+    if (defined('HOUSTON_DB')) {
+      $this->baseTable = HOUSTON_DB . $this->baseTable;
+    }
   }
 
   /**
@@ -371,7 +373,7 @@ abstract class DataObject {
       return $this->controllers;
     }
     // Initialize all of the controllers.
-    else {
+    else if (count($this->controllerConfig)) {
       // Sort the controllers by their weight.
       foreach ($this->controllerConfig as $key => $row) {
         $tmp[$key]  = $row['weight'];

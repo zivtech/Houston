@@ -1,7 +1,6 @@
 <?php
 
 namespace Houston;
-use /Houston/DataObject.php;
 
 /**
  * Ids for operation statuses.
@@ -17,7 +16,7 @@ define('HOUSTON_STATUS_DELETE_LOCK', 4);
 /**
  * This class represents the Houston application as a whole.
  */
-class Application extends DataObject {
+class Houston extends DataObject implements HoustonInterface {
 
   /**
    * The Houston Variables table.
@@ -40,22 +39,6 @@ class Application extends DataObject {
    * Configuration settings for this houston instance.
    */
   protected $config = NULL;
-
-  /**
-   * This method is called by the Houston_DataObject constructor.
-   *
-   * @return void
-   */
-  public function init() {
-    // Houston_Config storing all configuration settings.
-    // TODO: Reconsider best way to do this! (Note: Drupal kills globals)
-    $this->config = new Houston_Config();
-    if (isset($this->config->config['debugLog']) && file_exists($this->config->config['debugLog'])) {
-      $log = new Zend_Log();
-      $log->addWriter(new Zend_Log_Writer_Stream($this->config->config['debugLog']));
-      Zend_Registry::set('debug_log', $log);
-    }
-  }
 
   /**
    * Get a loaded object.
