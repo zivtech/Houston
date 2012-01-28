@@ -1,0 +1,34 @@
+{
+  "name": "houston/houston",
+  "version": "0.0.1",
+  "type": "library",
+  "description": "Houston is a data translation and syncronization framework.  Its goal is to make it trivial to translate data from one format to another and push and pull data between sources and destinations.  It was originally created to synchonize multiple Drupal websites with a Salesforce instance and an Alfresco instance keeping all three systems up to date in real time.",
+  "keywords": ["library", "middleware"],
+  "homepage": "http://houstoncommand.com",
+  "license": "GPL2",
+  "target-dir": "Houston",
+  "authors": [
+    {
+      "name": "Howard Tyson",
+      "email": "howard@howardtyson.com",
+      "homepage": "http://howardtyson.com"
+    },
+    {
+      "name": "kleinmp"
+    }
+  ],
+  "require": {
+      "php": ">=5.3"
+  },
+  "autoload": {
+      "psr-0": { "Houston": "lib" }
+  },
+  "require": {
+    "mockery/mockery": ">=0.7.2",
+    "behat/behat": ">=2.2.2"
+  },
+
+  "config": {
+    "bin-dir": "bin/"
+  }
+}
