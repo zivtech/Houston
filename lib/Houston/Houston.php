@@ -24,14 +24,8 @@ class Houston extends DataObject implements HoustonInterface {
   const HOUSTON_VARIABLES_TABLE = '.houston_variables';
 
   /**
-   * salesForceEnabled
-   *
-   * @var boolean
-   */
-  protected $salesForceEnabled = TRUE;
-
-  /**
    * An array of Houston Application variables.
+   * @deprecated
    */
   protected $variables = array();
 
@@ -50,14 +44,14 @@ class Houston extends DataObject implements HoustonInterface {
   public function getLoadedObject($id, $type) {
 
     static $objects = array();
-    if (!isset($objects[$type . '_' . $id])) {
+    if (!isset($objects[$type . ':' . $id])) {
       // TODO: This may need to load a Houston object, but that can break things in Queue.
       //$object = Houston_DataObject::factory('Houston_' . $type, array('db' => $this->db));
       $object = Houston_DataObject::factory($type, array('db' => $this->db));
       $object->load($id);
-      $objects[$type . '_' . $id] = $object;
+      $objects[$type . ':' . $id] = $object;
     }
-    return $objects[$type . '_' . $id];
+    return $objects[$type . ':' . $id];
   }
 
   /**
@@ -209,6 +203,20 @@ class Houston extends DataObject implements HoustonInterface {
     else {
       return $default;
     }
+  }
+
+  /**
+   *
+   * @param string $type
+   *   The name of the object type.
+   */
+  public function createDataObject($type, $object = FALSE) {
+    $objects = &$this->objects;
+    $id = count($objects) + 1;
+    if (!$object) {
+      $object = new DataObject();
+    }
+    $objects[$type . ':' . $id] = $object;
   }
 }
 
