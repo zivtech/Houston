@@ -1,9 +1,7 @@
 <?php
 
-// TODO: Rename this from Application to Houston.
-require_once 'Houston/DataObject.php';
-// Note: We need to tell houston where the configuration file lives before loading.
-require_once HOUSTON_CONFIG_FILE;
+namespace Houston;
+use /Houston/DataObject.php;
 
 /**
  * Ids for operation statuses.
@@ -19,7 +17,7 @@ define('HOUSTON_STATUS_DELETE_LOCK', 4);
 /**
  * This class represents the Houston application as a whole.
  */
-class Houston_Application extends Houston_DataObject {
+class Application extends DataObject {
 
   /**
    * The Houston Variables table.
