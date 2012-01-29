@@ -35,6 +35,11 @@ class Houston extends DataObject implements HoustonInterface {
   protected $config = NULL;
 
   /**
+   * Application wide configured connectors.
+   */
+  protected $connectors = array();
+
+  /**
    * Get a loaded object.
    *
    * @param mixed $type
@@ -217,6 +222,12 @@ class Houston extends DataObject implements HoustonInterface {
       $object = new DataObject();
     }
     $objects[$type . ':' . $id] = $object;
+    return $object;
+  }
+
+  public function addConnector($name, \Houston\Connector $connector) {
+    $this->connectors[$name] = $connector;
+    return $this;
   }
 }
 

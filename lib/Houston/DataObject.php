@@ -1,7 +1,7 @@
 <?php
 
 namespace Houston;
-
+use \stdClass as stdClass;
 /**
  * This object provides shared functionality
  */
@@ -223,9 +223,11 @@ class DataObject implements DataObjectInterface {
    * @return void
    */
   public final static function factory($className, array $conf = NULL) {
-
-    $classFile = str_replace('_', '/', $className) . '.php';
-    require_once $classFile;
+    if (!class_exists($className)) {
+      // Legacy stuff, this can all die soon:
+      $classFile = str_replace('_', '/', $className) . '.php';
+      require_once $classFile;
+    }
     return new $className($conf);
   }
 
