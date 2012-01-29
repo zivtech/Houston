@@ -42,21 +42,21 @@ class FeatureContext extends BehatContext {
   }
 
   /**
-   * @Given /^I have one source and one destination$/
+   * @Given /^I have two connectors configured with a field mapping between them$/
    */
-  public function iHaveOneSourceAndOneDestination()
-  {
+  public function iHaveTwoConnectorsConfiguredWithAFieldMappingBetweenThem() {
       $houston = $this->houston;
+      $connector = new Houston\Connector\ObjectConnector();
+      //$houston->addConnector('system1', $connector);
+      $houston->addConnector('test', $connector);
       $dataObject = $this->dataObject;
-
-      $houston->
+      $dataObject->getData();
   }
 
   /**
-   * @Given /^I have data from the destination$/
+   * @Given /^I have populate the data object with a destination$/
    */
-  public function iHaveDataFromTheDestination()
-  {
+  public function iHavePopulateTheDataObjectWithADestination() {
       throw new PendingException();
   }
 
