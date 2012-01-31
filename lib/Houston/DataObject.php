@@ -1421,6 +1421,18 @@ class DataObject implements DataObjectInterface {
     );
   }
 
+  /**
+   *  START TOTALLY NEW HOUSTON2 CODE.
+   */
+
+  /**
+   * Add a field to this data object.
+   *
+   * @param (string) $fieldName
+   *   The string representing the name of this field.
+   * @param \Houston\Field\FieldInterface $field
+   *   Optionally provide a field handler for this field.  Most fields can use the default.
+   */
   public function addField($fieldName, $field = FALSE) {
     if ($field && get_class() != '\Houston\Field\FieldInterface') {
       throw new Exception('The wrong type was provided to addField().');
@@ -1434,15 +1446,34 @@ class DataObject implements DataObjectInterface {
     return $field;
   }
 
+  /**
+   * Add a named connector to this data object.
+   *
+   * @param (string) $name
+   *   The name of the connector to add to the object.
+   * @param (\Houston\Connector\ConnectorInterface) $connector
+   *   The connector to add to the object.  Defaults to the ObjectConnector.
+   */
+  public function addConnector($name, \Houston\Connector\ConnectorInterface $connector) {
+    $this->controllers[$name] = $connector;
+    return $this;
+  }
+
+  /**
+   * Add a connector mapping so a particular field.
+   *
+   * @param $fieldName
+   *   The name of the local field (native to this DataObject).
+   * @param $connectorName
+   *   The name of a connector on this object.
+   * @param $connectorFieldName
+   *   The name the desired connector field.
+   */
   public function addFieldConnectorMapping($fieldName, $connectorName, $connectorFieldName) {
     $this->fieldMap[$fieldName][$connectorName] = $connectorFieldName;
     return $this;
   }
 
-  public function addConnector($name, \Houston\Connector\ConnectorInterface $connector) {
-    $this->controllers[$name] = $connector;
-    return $this;
-  }
   public function addFieldMappingToConnector($fieldName, $connectorName, $field) {
     $this->fieldMap[$fieldName][$connectorName]['field'] = $field;
   }
