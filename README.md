@@ -8,11 +8,13 @@ rewrite but is a major refactor.
 
 The goals:
 
-- Provide an actual API, don't require you to create your own subclass with a big manually written and largely undocumented data structure
-- PSR-0 compliance for integration with other modern PHP projects
-- Remove the dependency on the Zend framework
-- The ability to use Houston without a canonical database (any Connector can be treated as a canonical store)
+- Provide an actual API, don't require developers to create their own subclass with a big manually written and largely undocumented data structure.
+- Stop requiring you to duplicate your data.  Sometimes it makes sense for your middleware to keep a copy, but often it doesn't.
+- PSR-0 compliance for integration with other modern PHP projects.
+- Remove the dependency on the Zend framework.
+- The ability to use Houston without a canonical database (any Connector can be treated as the canonical store).
 - Testing.  BDD style testing for every feature.
+- Stop conflating data transformation for an external source and data transmission to an external source.
 
 ## Testing ##
 
@@ -23,32 +25,40 @@ code that has been implemented/ported.
 
 ## New Syntax ##
 
-The idea is 
+The following **is not implmeneted and does not work**, however it does show how we'd like our new syntax to work in an ideal world. 
 
 <?php
-	$houston = new \Houston\Houston;
-	$drupal_connector = $houston
-	  ->addConnector('drupal', new \Houston\Connector\Drupal\7\Local);
-	$salesforce_connector = $houston
-	  ->addConnector('salesforce', new \Houston\Connector\Salesforce)
-	  ->configure(array('username' => 'foo', 'password' => 'bar', 'token' => 'baz'));
+  $houston = new \Houston\Houston;
+  $drupal_connector = $houston
+    ->addConnector('drupal', new \Houston\Connector\Drupal\7\Local);
+  $salesforce_connector = $houston
+    ->addConnector('salesforce', new \Houston\Connector\Salesforce)
+    ->configure(array('username' => 'foo', 'password' => 'bar', 'token' => 'baz'));
 
-	$contact = $houston->createDataObject('contact');
-	$contact 
-		->addConnector('drupal')
-		->setDefaultConnector('drupal')
-	  ->addConnector('salesforce');
-	// Create a field new field on this object.
-	$firstName = $contact->addField('firstName');
-	$firstName
-	  ->setLabel('First Name')
-	  ->setType('string')
-	  ->mapToConnector('drupal', 'field_first_name')
-	  ->mapToConnector('salesforce', 'firstName__c');
-	$contact
-	  ->setData(array('firstName' => 'John'))
-	  ->save('drupal')
-	  ->save('salesforce');
-	$contact
-	  ->load('drupal')
+  $contact = $houston->createDataObject();
+  $contact 
+    // TODO: This isn't right... How do we add the `drupal` connector without it being a call on the Houston object?
+    ->addConnector('drupal')
+    // In some way indicate Drupal is canonical?
+    ->setDefaultConnector('drupal')
+    ->addConnector('salesforce');
+  // Create a new field on this object.
+  $firstName = $contact->addField('firstName');
+  $firstName
+    ->setLabel('First Name')
+    ->setType('string')
+    ->mapToConnector('drupal', 'field_first_name')
+    ->mapToConnector('salesforce', 'firstName__c');
+  // Tell Houston that this is a reusable type that we'll want again.
+  $houston->addPrototype('Contact', $contact);
+  $contact
+    ->setData(array('firstName' => 'John'))
+    ->save('drupal')
+    ->save('salesforce');
+  $contact
+    ->load('drupal')
+  // Get another contact record based on the one registered as a prototype.
+  $william = $houston->getDataObject('Contact');
+  $william->setData(array('firstName' => 'William'))
+    ->save('drupal');
 ?>
