@@ -45,34 +45,43 @@ class FeatureContext extends BehatContext {
    * @Given /^I have two connectors configured with a field mapping between them$/
    */
   public function iHaveTwoConnectorsConfiguredWithAFieldMappingBetweenThem() {
-      $houston = $this->houston;
-      $connector = new Houston\Connector\ObjectConnector();
-      //$houston->addConnector('system1', $connector);
-      $houston->addConnector('test', $connector);
-      $dataObject = $this->dataObject;
-      $dataObject->getData();
+    $houston = $this->houston;
+    $dataObject = $this->dataObject;
+    $connector = new Houston\Connector\ObjectConnector();
+    $houston
+      // Register the connector in Houston for reuse.
+      ->addConnector('system2', $connector)
+      // Add the connector to this object.
+      ->addConnectorToObject('system2', $dataObject);
+    $field = $dataObject->addField('foo');
+    $field->mapToConnector('system2', 'bar');
   }
 
   /**
-   * @Given /^I have populate the data object with a destination$/
+   * @Given /^I have populated the data object with a destination$/
    */
-  public function iHavePopulateTheDataObjectWithADestination() {
-      throw new PendingException();
+  public function iHavePopulatedTheDataObjectWithADestination() {
+    //throw new PendingException();
+    $inputData = new stdClass;
+    $inputData->foo = 'baz';
+    // Set data with our native structure.
+    $this->dataObject->setData($inputData);
   }
 
   /**
    * @When /^I ask to translate from one to the other$/
    */
-  public function iAskToTranslateFromOneToTheOther()
-  {
-      throw new PendingException();
+  public function iAskToTranslateFromOneToTheOther() {
+    // Retrieve the data with the structure for system2.
+    $this->data = $this->dataObject->getData('system2');
   }
 
   /**
    * @Then /^I should get the same data in the new structure$/
    */
-  public function iShouldGetTheSameDataInTheNewStructure()
-  {
-      throw new PendingException();
+  public function iShouldGetTheSameDataInTheNewStructure() {
+    if ($this->data->bar !== 'baz') {
+      throw new Exception();
+    }
   }
 }
