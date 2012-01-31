@@ -17,7 +17,6 @@ class houston_queue_handler_field_queue_item_remove extends views_handler_field 
 
   function render($values) {
     $qid = $this->get_value($values, 'qid');
-dsm($qid);
     return l(t('Delete'), 'admin/structure/houston/queue/' . $qid . '/delete', array('query' => array('destination' => current_path())));
   }
 }
