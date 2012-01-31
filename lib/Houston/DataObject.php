@@ -1421,4 +1421,30 @@ class DataObject implements DataObjectInterface {
     );
   }
 
+  public function addField($fieldName, $field = FALSE) {
+    if ($field && get_class() != '\Houston\Field\FieldInterface') {
+      throw new Exception('The wrong type was provided to addField().');
+    }
+    else if (!$field) {
+      $field = new \Houston\Field\Field($fieldName, $this);
+    }
+    if (!isset($this->fieldMap[$fieldName])) {
+      $this->fieldMap[$fieldName] = array();
+    }
+    return $field;
+  }
+
+  public function addFieldConnectorMapping($fieldName, $connectorName, $connectorFieldName) {
+    $this->fieldMap[$fieldName][$connectorName] = $connectorFieldName;
+    return $this;
+  }
+
+  public function addConnector($name, \Houston\Connector\ConnectorInterface $connector) {
+    $this->controllers[$name] = $connector;
+    return $this;
+  }
+  public function addFieldMappingToConnector($fieldName, $connectorName, $field) {
+    $this->fieldMap[$fieldName][$connectorName]['field'] = $field;
+  }
 }
+

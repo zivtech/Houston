@@ -225,10 +225,32 @@ class Houston extends DataObject implements HoustonInterface {
     return $object;
   }
 
-  public function addConnector($name, \Houston\Connector $connector) {
+  public function addConnector($name, \Houston\Connector\ConnectorInterface $connector) {
     $this->connectors[$name] = $connector;
     return $this;
   }
+
+  public function addConnectorToObject($name, \Houston\DataObjectInterface $object) {
+    if (isset($this->connectors[$name])) {
+      $object->addConnector($name, $this->connectors[$name]);
+    }
+    return $this;
+  }
+
+  public function addPrototype($name, \Houston\DataObjectInterface $object) {
+    $this->prototypes[$name] = $object;
+  }
+
+  public function getDataObject($name) {
+    // TODO: We should also support class based objects that are centrally registered.
+    if (isset($prototypes[$name])) {
+      return $prototypes[$name];
+    }
+    else {
+      throw new Exception(sprintf('Requested prototype data object %s does not exist.', $name));
+    }
+  }
+
 }
 
 
