@@ -126,16 +126,17 @@ abstract class Houston_DataObject {
     'load' => array(
       'operation' => HOUSTON_STATUS_LOAD_LOCK,
       // TODO: This can't lock saving, if we don't have an external id.
-      'locks' => HOUSTON_STATUS_SAVE_LOCK,
+      'locks' => array('save'),
     ),
     // When we can't load, we lock saving.
     'save' => array(
       'operation' => HOUSTON_STATUS_SAVE_LOCK,
-      'locks' => HOUSTON_STATUS_LOAD_LOCK,
+      'locks' => array('load'),
     ),
     'delete' => array(
       'operation' => HOUSTON_STATUS_DELETE_LOCK,
-      'locks' => 0,//HOUSTON_STATUS_LOAD_LOCK + HOUSTON_STATUS_SAVE_LOCK,
+      // TODO: Are the locks correct here?
+      'locks' => array('save', 'load'),
     ),
   );
 
@@ -304,10 +305,10 @@ abstract class Houston_DataObject {
 
         // Data may or may not need to be altered for translation.
         if (isset($fieldMap[$localField][$destController]['data alter'])) {
-          $output->{$controllerField} = $this->{$fieldMap[$localField][$destController]['data alter']}('transmit', $value);
+          $output->{$controllerField} = $this->{$fieldMap[$localField][$destController]['data alter']}('transmit', $value, $data);
         }
         else if (isset($fieldMap[$localField][$sourceController]['data alter'])) {
-          $output->{$controllerField} = $this->{$fieldMap[$localField][$sourceController]['data alter']}('retrieve', $value);
+          $output->{$controllerField} = $this->{$fieldMap[$localField][$sourceController]['data alter']}('retrieve', $value, $data);
         }
         else {
           $output->{$controllerField} = $value;
@@ -1340,10 +1341,24 @@ abstract class Houston_DataObject {
     $controllerConfig = $this->controllerConfig;
     if (isset($controllerConfig[$controller]['status'])) {
       $statusInfo = $controllerConfig[$controller]['status'];
-      if (in_array($operation, $statusInfo['statusEnabledOps'])) {
-        $operationStatus = (int) $this->statusOperationIds[$operation]['locks'];
-        $currentStatus = (int) $this->{$controllerConfig[$controller]['status']['statusField']};
-        return ($operationStatus & $currentStatus) ? HOUSTON_STATUS_LOCKED : HOUSTON_STATUS_UNLOCKED;
+      $lockedOperations = $this->statusOperationIds[$operation]['locks'];
+      // Veryify that there are lockable operations.
+      if (!count($statusInfo['statusEnabledOps'])) {
+        return HOUSTON_STATUS_UNLOCKED;
+      }
+      // Each operation can lock any other. See $this->statusOperationIds for info.
+      // Check which operations enabled operations to see if the
+      // current operation locks it.
+      foreach ($statusInfo['statusEnabledOps'] as $statusEnabledOp) {
+        if (in_array($operation, $this->statusOperationIds[$statusEnabledOp]['locks'])) {
+          $operationStatus = (int) $this->statusOperationIds[$statusEnabledOp]['operation'];
+          $currentStatus = (int) $this->{$controllerConfig[$controller]['status']['statusField']};
+          // If the designated operation has one similar bit as the current status
+          // then this is locked.
+          if ($operationStatus & $currentStatus) {
+            return HOUSTON_STATUS_LOCKED;
+          }
+        }
       }
     }
     return HOUSTON_STATUS_UNLOCKED;
