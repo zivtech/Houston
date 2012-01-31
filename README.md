@@ -18,14 +18,14 @@ The goals:
 
 ## Testing ##
 
-Testing is done using [BDD](http://dannorth.net/introducing-bdd) via [Behat](http://behat.org).  All testing dependencies can be installed using
-composer by running composer from inside this directory.  If you are not running the unit tests, you don't need to run composer. While in the 
-process of updating Houston from version 1.x to 2.x, there are many features that may be in some state of disrepair but tests should reflect the
+Development is done using [BDD](http://dannorth.net/introducing-bdd) via [Behat](http://behat.org).  All testing dependencies can be installed using
+composer by running `composer install` from inside this directory.  If you are not running the unit tests, you don't need to run composer. We are in
+the process of updating Houston from version 1.x to 2.x, there are many features that may be in some state of disrepair but tests should reflect the
 code that has been implemented/ported.
 
 ## New Syntax ##
 
-The following **is not implmeneted and does not work**, however it does show how we'd like our new syntax to work in an ideal world. 
+The following **is partly implmeneted and does not *fully* work**, however it does, however, show how we'd like our new syntax to look.
 
 <?php
   $houston = new \Houston\Houston;
