@@ -959,7 +959,12 @@ class DataObject implements DataObjectInterface {
    * @param $controller string
    *
    */
-  public function setData(stdClass $input, $controller = FALSE) {
+  public function setData($input, $controller = FALSE) {
+    // TODO: allow anything that'll work with a foreach as input but how can we check this?
+    $reflection = new \ReflectionClass($input);
+    if (!is_array($input) && !is_object($input)) {
+      throw new \Exception(sprintf('Input data passed to %s::setData incompatible with foreach().  Object was of type %s', get_class($this), gettype($input)));
+    }
     $controllers = $this->getControllers();
     $fieldMap = $this->getFieldMap();
     if ($controller == FALSE) {
