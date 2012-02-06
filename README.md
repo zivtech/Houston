@@ -27,38 +27,38 @@ code that has been implemented/ported.
 
 The following **is partly implmeneted and does not *fully* work**, however it does, however, show how we'd like our new syntax to look.
 
-<?php
-  $houston = new \Houston\Houston;
-  $drupal_connector = $houston
-    ->addConnector('drupal', new \Houston\Connector\Drupal\7\Local);
-  $salesforce_connector = $houston
-    ->addConnector('salesforce', new \Houston\Connector\Salesforce)
-    ->configure(array('username' => 'foo', 'password' => 'bar', 'token' => 'baz'));
+    <?php
+    $houston = new \Houston\Houston;
+    $drupal_connector = $houston
+      ->addConnector('drupal', new \Houston\Connector\Drupal\7\Local);
+    $salesforce_connector = $houston
+      ->addConnector('salesforce', new \Houston\Connector\Salesforce)
+      ->configure(array('username' => 'foo', 'password' => 'bar', 'token' => 'baz'));
 
-  $contact = $houston->createDataObject();
-  $contact 
-    // TODO: This isn't right... How do we add the `drupal` connector without it being a call on the Houston object?
-    ->addConnector('drupal')
-    // In some way indicate Drupal is canonical?
-    ->setDefaultConnector('drupal')
-    ->addConnector('salesforce');
-  // Create a new field on this object.
-  $firstName = $contact->addField('firstName');
-  $firstName
-    ->setLabel('First Name')
-    ->setType('string')
-    ->mapToConnector('drupal', 'field_first_name')
-    ->mapToConnector('salesforce', 'firstName__c');
-  // Tell Houston that this is a reusable type that we'll want again.
-  $houston->addPrototype('Contact', $contact);
-  $contact
-    ->setData(array('firstName' => 'John'))
-    ->save('drupal')
-    ->save('salesforce');
-  $contact
-    ->load('drupal')
-  // Get another contact record based on the one registered as a prototype.
-  $william = $houston->getDataObject('Contact');
-  $william->setData(array('firstName' => 'William'))
-    ->save('drupal');
-?>
+    $contact = $houston->createDataObject();
+    $contact
+      // TODO: This isn't right... How do we add the `drupal` connector without it being a call on the Houston object?
+      ->addConnector('drupal')
+      // In some way indicate Drupal is canonical?
+      ->setDefaultConnector('drupal')
+      ->addConnector('salesforce');
+    // Create a new field on this object.
+    $firstName = $contact->addField('firstName');
+    $firstName
+      ->setLabel('First Name')
+      ->setType('string')
+      ->mapToConnector('drupal', 'field_first_name')
+      ->mapToConnector('salesforce', 'firstName__c');
+    // Tell Houston that this is a reusable type that we'll want again.
+    $houston->addPrototype('Contact', $contact);
+    $contact
+      ->setData(array('firstName' => 'John'))
+      ->save('drupal')
+      ->save('salesforce');
+    $contact
+      ->load('drupal')
+    // Get another contact record based on the one registered as a prototype.
+    $william = $houston->getDataObject('Contact');
+    $william->setData(array('firstName' => 'William'))
+      ->save('drupal');
+    ?>
